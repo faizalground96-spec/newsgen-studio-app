@@ -464,6 +464,13 @@
       '<div class="nga-field"><label class="nga-label">API Key AI</label><input class="nga-input" id="dApiKey" value="' + esc(p.apiKey || '') + '" placeholder="Kosongkan bila belum ada"></div>' +
       '</div>' +
       '<div class="nga-field"><label class="nga-label">Web App URL (akun Google pelaksana)</label><input class="nga-input" id="dWebapp" value="' + esc(p.webapp_url || '') + '" placeholder="Kosongkan = pakai Web App utama"></div>' +
+      '<div class="nga-card" style="margin:14px 0"><h3>&#128248; Instagram & Threads</h3>' +
+      '<div class="nga-grid2">' +
+      '<div class="nga-field"><label class="nga-label">Instagram User ID</label><input class="nga-input" id="dIgUserId" value="' + esc(p.ig_user_id || '') + '" placeholder="cth: 17841400000000000"></div>' +
+      '<div class="nga-field"><label class="nga-label">Instagram Access Token</label><input class="nga-input" id="dIgToken" type="password" value="' + esc(p.ig_token || '') + '" placeholder="Token instagram_business_content_publish"></div>' +
+      '<div class="nga-field"><label class="nga-label">Threads User ID</label><input class="nga-input" id="dThUserId" value="' + esc(p.threads_user_id || '') + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">Threads Access Token</label><input class="nga-input" id="dThToken" type="password" value="' + esc(p.threads_token || '') + '" placeholder="Token threads_content_publish"></div>' +
+      '</div></div>' +
       '<div class="nga-field"><label class="nga-label">Status</label><select class="nga-select" id="dAktif"><option value="1"' + (p.aktif !== false ? ' selected' : '') + '>Aktif</option><option value="0"' + (p.aktif === false ? ' selected' : '') + '>Nonaktif</option></select></div>' +
       '<div class="nga-field"><label class="nga-label">Maks. Halaman FB</label><input class="nga-input" id="dMaxHalaman" type="number" min="1" max="50" value="' + (p.max_halaman === undefined || p.max_halaman === null ? 3 : p.max_halaman) + '"><p class="nga-muted" style="margin-top:6px">Standar 3. Tambah 1 halaman = Rp80.000.</p></div>' +
       '<button class="nga-btn" onclick="akunSimpan()">&#128190; Simpan Perubahan</button></div>' +
@@ -481,6 +488,10 @@
       model: document.getElementById('dModel').value,
       apiKey: document.getElementById('dApiKey').value.trim(),
       webapp_url: document.getElementById('dWebapp').value.trim(),
+      ig_user_id: document.getElementById('dIgUserId').value.trim(),
+      ig_token: document.getElementById('dIgToken').value.trim(),
+      threads_user_id: document.getElementById('dThUserId').value.trim(),
+      threads_token: document.getElementById('dThToken').value.trim(),
       aktif: document.getElementById('dAktif').value === '1',
       max_halaman: parseInt(document.getElementById('dMaxHalaman').value, 10) || 3
     };

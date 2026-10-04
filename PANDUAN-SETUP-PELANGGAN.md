@@ -76,6 +76,58 @@ Siapkan dulu 3 catatan kecil (ditulis di kertas/notepad):
 
 ---
 
+## Bagian D — Instagram & Threads (opsional, 10 menit)
+
+Supaya tombol **Terbitkan Sekarang** di Studio Konten bisa mengunggah langsung ke
+Instagram dan Threads, siapkan kredensial berikut di aplikasi Meta yang sama
+dengan Bagian B.
+
+### D1. Instagram
+
+1. Pastikan akun Instagram-mu adalah akun **Business** atau **Kreator**
+   (di aplikasi Instagram: Settings → Account type → Switch to professional),
+   lalu tautkan ke **Halaman Facebook**-mu
+   (Settings → Account centre → Set up Accounts Centre).
+2. Di https://developers.facebook.com → **My Apps** → pilih aplikasimu →
+   **Add Product** → **Instagram** (atau buka Use Cases → tambahkan
+   **Instagram API**).
+3. Tambahkan izin: `instagram_basic` dan **`instagram_business_content_publish`**.
+4. Dapatkan **Instagram User ID**: buka
+   https://developers.facebook.com/tools/explorer → pilih aplikasimu →
+   panggil `GET /me/accounts` → cari halamanmu → catat
+   `instagram_business_account.id` (angka panjang, cth. `1784140…`).
+5. Dapatkan **Access Token**: di Graph API Explorer yang sama, Generate
+   Access Token dengan izin di langkah 3 → **Extend Access Token**
+   (berlaku ±60 hari, perpanjang sebelum kedaluwarsa) → salin.
+
+### D2. Threads
+
+1. Di dashboard aplikasimu → **Add Product** / Use Cases → **Threads API**.
+2. Tambahkan izin: `threads_basic` dan **`threads_content_publish`**.
+3. Dapatkan **Threads User ID**: di Graph API Explorer panggil
+   `GET https://graph.threads.net/v1.0/me?fields=id,username`
+   dengan token Threads-mu → catat `id`-nya.
+4. Dapatkan **Access Token**: Generate Token di pengaturan Threads API
+   (berlaku ±60 hari) → salin.
+
+### D3. Masukkan ke NewsGen
+
+1. Login ke aplikasi NewsGen Studio → menu **Setting** →
+   bagian **📸 Instagram & Threads**.
+2. Isi **Instagram User ID** + **Access Token** → **Tes Instagram**
+   (harus muncul `@username`-mu ✓).
+3. Isi **Threads User ID** + **Access Token** → **Tes Threads**.
+4. Klik **Simpan**.
+5. Di **Studio Konten** (AI News langkah 3 / Post Manual), centang
+   **Instagram** / **Threads** di bagian "Terbitkan ke", lalu
+   **🚀 Terbitkan Sekarang**. Kartu visual / media otomatis diunggah
+   lalu diterbitkan via API resmi Meta.
+
+Catatan:
+- Instagram **wajib pakai gambar/video** (tidak bisa teks saja).
+- Token Meta kedaluwarsa ±60 hari — kalau tiba-tiba gagal terbit,
+  buat ulang tokennya dan simpan ulang di Setting.
+
 ## Kalau ada masalah
 
 | Gejala | Periksa |

@@ -313,6 +313,14 @@
               <div class="ngt-wiznav" style="margin-top:0;margin-bottom:14px;">
                 <button class="ngt-btn ghost" onclick="aiDownload()">&#11015; Download PNG</button>
               </div>
+              <div class="ngt-field"><label class="ngt-label">Terbitkan ke</label>
+                <div style="display:flex;gap:16px;flex-wrap:wrap" id="ngtPlatAi">
+                  <label style="display:flex;align-items:center;gap:6px;color:#e8e8ea;font-size:13px;cursor:pointer"><input type="checkbox" value="facebook" checked style="width:16px;height:16px"> Facebook</label>
+                  <label style="display:flex;align-items:center;gap:6px;color:#e8e8ea;font-size:13px;cursor:pointer"><input type="checkbox" value="instagram" style="width:16px;height:16px"> Instagram</label>
+                  <label style="display:flex;align-items:center;gap:6px;color:#e8e8ea;font-size:13px;cursor:pointer"><input type="checkbox" value="threads" style="width:16px;height:16px"> Threads</label>
+                </div>
+                <p class="ngt-muted" style="margin:6px 0 0">Instagram & Threads terbit via API asli (kredensial di Setting). Kartu visual otomatis diunggah.</p>
+              </div>
               <div class="ngt-field"><label class="ngt-label">Aksi</label>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                   <button class="ngt-btn green" onclick="aiTerbit()">&#128640; Terbitkan Sekarang</button>
@@ -350,7 +358,15 @@
               <p class="ngt-muted" id="ngtManualFileName" style="margin-top:8px"></p>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="ngt-btn green" onclick="ngtManualTerbit()">🚀 Terbitkan Sekarang</button>
+              <div class="ngt-field"><label class="ngt-label">Terbitkan ke</label>
+              <div style="display:flex;gap:16px;flex-wrap:wrap" id="ngtPlatManual">
+                <label style="display:flex;align-items:center;gap:6px;color:#e8e8ea;font-size:13px;cursor:pointer"><input type="checkbox" value="facebook" checked style="width:16px;height:16px"> Facebook</label>
+                <label style="display:flex;align-items:center;gap:6px;color:#e8e8ea;font-size:13px;cursor:pointer"><input type="checkbox" value="instagram" style="width:16px;height:16px"> Instagram</label>
+                <label style="display:flex;align-items:center;gap:6px;color:#e8e8ea;font-size:13px;cursor:pointer"><input type="checkbox" value="threads" style="width:16px;height:16px"> Threads</label>
+              </div>
+              <p class="ngt-muted" style="margin:6px 0 0">Instagram wajib pakai gambar/video. Media otomatis diunggah lalu diterbitkan via API.</p>
+            </div>
+            <button class="ngt-btn green" onclick="ngtManualTerbit()">🚀 Terbitkan Sekarang</button>
               <button class="ngt-btn ghost" onclick="ngtManualAntre()">＋ Masuk Antrean</button>
             </div>
           </div>
@@ -473,6 +489,27 @@
           <p class="ngt-muted" id="ngtWebappStatus" style="margin:10px 0 0"></p>
         </div>
 
+        <!-- INSTAGRAM & THREADS -->
+        <div class="ngt-card" style="margin-bottom:14px">
+          <h3>&#128248; Instagram & Threads</h3>
+          <p class="ngt-muted" style="margin:0 0 12px">Terbitkan konten langsung ke Instagram & Threads lewat Graph API resmi Meta.<br>Butuh: akun Instagram <b>Business/Kreator</b> tertaut ke Halaman Facebook + aplikasi Meta dengan izin publish.</p>
+          <div class="ngt-field"><label class="ngt-label">Instagram User ID</label><input class="ngt-input" id="ngtIgUserId" placeholder="cth: 17841400000000000"></div>
+          <div class="ngt-field"><label class="ngt-label">Instagram Access Token</label>
+            <div class="ngt-pw-wrap"><input class="ngt-input" type="password" id="ngtIgToken" placeholder="Token dengan izin instagram_business_content_publish"><button class="ngt-btn ghost" type="button" onclick="ngtTogglePw('ngtIgToken', this)">&#128065;&#65039;</button></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="ngt-btn ghost" onclick="ngtTesIg()">&#128268; Tes Instagram</button></div>
+          <p class="ngt-muted" id="ngtIgStatus" style="margin:10px 0 14px"></p>
+          <div class="ngt-field"><label class="ngt-label">Threads User ID</label><input class="ngt-input" id="ngtThUserId" placeholder="cth: 12345678901234567"></div>
+          <div class="ngt-field"><label class="ngt-label">Threads Access Token</label>
+            <div class="ngt-pw-wrap"><input class="ngt-input" type="password" id="ngtThToken" placeholder="Token dengan izin threads_content_publish"><button class="ngt-btn ghost" type="button" onclick="ngtTogglePw('ngtThToken', this)">&#128065;&#65039;</button></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="ngt-btn" onclick="ngtSimpanIgThreads()">&#128190; Simpan</button>
+            <button class="ngt-btn ghost" onclick="ngtTesThreads()">&#128268; Tes Threads</button>
+          </div>
+          <p class="ngt-muted" id="ngtThStatus" style="margin:10px 0 0"></p>
+        </div>
+
         <!-- UMUM -->
         <div class="ngt-card">
           <h3>⚙️ Umum</h3>
@@ -535,7 +572,7 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
+    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, ig_user_id:p.ig_user_id, ig_token:p.ig_token, threads_user_id:p.threads_user_id, threads_token:p.threads_token, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
     ngtMemSession = d;
     try {
       if(d) sessionStorage.setItem('ngt_session', JSON.stringify(d));
@@ -740,6 +777,96 @@
     }
   };
 
+  /* ============ INSTAGRAM GRAPH API (content publishing) ============
+     Syarat: akun IG Business/Kreator tertaut ke Halaman FB + token berizin
+     instagram_business_content_publish. Media diambil Meta dari URL publik. */
+  const IG = {
+    ver: 'v21.0',
+    cred(){ var s = ngtSession(); return (s && s.ig_user_id && s.ig_token) ? { id:String(s.ig_user_id).trim(), token:String(s.ig_token).trim() } : null; },
+    async api(path, method, params, token){
+      var q = Object.keys(params || {}).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      var url = 'https://graph.facebook.com/' + this.ver + path + '?access_token=' + encodeURIComponent(token) + (q ? '&' + q : '');
+      const res = await fetch(url, { method: method || 'GET' });
+      const j = await res.json().catch(function(){ return {}; });
+      if(!res.ok || j.error) throw new Error('Instagram: ' + ((j.error && j.error.message) || ('HTTP ' + res.status)));
+      return j;
+    },
+    async test(id, token){ return this.api('/' + encodeURIComponent(id), 'GET', { fields:'id,username' }, token); },
+    async publishImage(imageUrl, caption){
+      var c = this.cred(); if(!c) throw new Error('Isi dulu Instagram User ID & Access Token di Setting');
+      var m = await this.api('/' + c.id + '/media', 'POST', { image_url:imageUrl, caption:caption || '' }, c.token);
+      if(!m.id) throw new Error('Instagram: gagal membuat kontainer media');
+      await this.api('/' + c.id + '/media_publish', 'POST', { creation_id:m.id }, c.token);
+      return true;
+    },
+    async publishVideo(videoUrl, caption){
+      var c = this.cred(); if(!c) throw new Error('Isi dulu Instagram User ID & Access Token di Setting');
+      var m = await this.api('/' + c.id + '/media', 'POST', { media_type:'VIDEO', video_url:videoUrl, caption:caption || '' }, c.token);
+      if(!m.id) throw new Error('Instagram: gagal membuat kontainer video');
+      var n = 0;
+      while(n < 20){
+        await new Promise(function(r){ setTimeout(r, 15000); });
+        var st = await this.api('/' + m.id, 'GET', { fields:'status_code' }, c.token);
+        if(st.status_code === 'FINISHED') break;
+        if(st.status_code === 'ERROR') throw new Error('Instagram: video gagal diproses Meta');
+        n++;
+      }
+      await this.api('/' + c.id + '/media_publish', 'POST', { creation_id:m.id }, c.token);
+      return true;
+    }
+  };
+
+  /* ============ THREADS API ============
+     Host graph.threads.net. Izin: threads_basic + threads_content_publish. */
+  const TH = {
+    ver: 'v1.0',
+    cred(){ var s = ngtSession(); return (s && s.threads_user_id && s.threads_token) ? { id:String(s.threads_user_id).trim(), token:String(s.threads_token).trim() } : null; },
+    async api(path, method, params, token){
+      var q = Object.keys(params || {}).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      var url = 'https://graph.threads.net/' + this.ver + path + '?access_token=' + encodeURIComponent(token) + (q ? '&' + q : '');
+      const res = await fetch(url, { method: method || 'GET' });
+      const j = await res.json().catch(function(){ return {}; });
+      if(!res.ok || j.error) throw new Error('Threads: ' + ((j.error && j.error.message) || ('HTTP ' + res.status)));
+      return j;
+    },
+    async test(id, token){ return this.api('/' + encodeURIComponent(id), 'GET', { fields:'id,username' }, token); },
+    async publish(o){
+      var c = this.cred(); if(!c) throw new Error('Isi dulu Threads User ID & Access Token di Setting');
+      var params = { media_type:o.type || 'TEXT' };
+      if(o.text) params.text = o.text;
+      if(o.type === 'IMAGE' && o.mediaUrl) params.image_url = o.mediaUrl;
+      if(o.type === 'VIDEO' && o.mediaUrl) params.video_url = o.mediaUrl;
+      var m = await this.api('/' + c.id + '/threads', 'POST', params, c.token);
+      if(!m.id) throw new Error('Threads: gagal membuat kontainer');
+      await this.api('/' + c.id + '/threads_publish', 'POST', { creation_id:m.id }, c.token);
+      return true;
+    }
+  };
+
+  /* Upload media ke Supabase Storage bucket newsgen-media (publik) -> URL publik.
+     Dibutuhkan karena API Instagram/Threads mengambil media dari URL publik. */
+  async function ngtUploadMedia(blob, namaFile){
+    var cfg = BACKEND_CONFIG.supabase;
+    if(!cfg.url || !cfg.anonKey) throw new Error('Konfigurasi Supabase belum lengkap');
+    var s = ngtSession();
+    var aman = String(namaFile || 'media').replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    var path = (s ? s.id : 'anon') + '/' + Date.now() + '-' + aman;
+    var base = cfg.url.replace(/\/$/, '');
+    const res = await fetch(base + '/storage/v1/object/newsgen-media/' + path, {
+      method: 'POST',
+      headers: { apikey:cfg.anonKey, Authorization:'Bearer ' + cfg.anonKey, 'Content-Type':blob.type || 'application/octet-stream' },
+      body: blob
+    });
+    if(!res.ok) throw new Error('Upload media gagal (HTTP ' + res.status + ') — bucket newsgen-media belum siap?');
+    return base + '/storage/v1/object/public/newsgen-media/' + path;
+  }
+
+  function ngtPlatTerpilih(kontainerId){
+    var out = [];
+    document.querySelectorAll('#' + kontainerId + ' input[type=checkbox]').forEach(function(c){ if(c.checked) out.push(c.value); });
+    return out;
+  }
+
   function backendBelum(nama){
     ngtToast('Backend <b>' + nama + '</b> belum dikonfigurasi — isi BACKEND_CONFIG dulu');
     return Promise.resolve(null);
@@ -756,7 +883,7 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
+    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, ig_user_id:p.ig_user_id, ig_token:p.ig_token, threads_user_id:p.threads_user_id, threads_token:p.threads_token, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
     ngtMemSession = d;
     try {
       if(d) sessionStorage.setItem('ngt_session', JSON.stringify(d));
@@ -1061,6 +1188,46 @@
       else throw 0;
     } catch(e){ document.getElementById('ngtWebappStatus').innerHTML = '<b style="color:#f87171">Tidak dapat terhubung</b> — periksa URL-nya'; }
   };
+  window.ngtSimpanIgThreads = async function(){
+    var s = ngtSession();
+    if(!s || !s.id){ ngtToast('Sesi habis — <b>login ulang</b>'); return; }
+    var d = {
+      ig_user_id: document.getElementById('ngtIgUserId').value.trim(),
+      ig_token: document.getElementById('ngtIgToken').value.trim(),
+      threads_user_id: document.getElementById('ngtThUserId').value.trim(),
+      threads_token: document.getElementById('ngtThToken').value.trim()
+    };
+    try {
+      await Supa.update('pelanggan', s.id, d);
+    } catch(e){ ngtToast('Gagal menyimpan: ' + esc(e.message)); return; }
+    Object.keys(d).forEach(function(k){ s[k] = d[k]; });
+    try { sessionStorage.setItem('ngt_session', JSON.stringify(s)); } catch(e){}
+    document.getElementById('ngtIgStatus').innerHTML = d.ig_user_id ? 'Instagram terhubung &#10003;' : '';
+    document.getElementById('ngtThStatus').innerHTML = d.threads_user_id ? 'Threads terhubung &#10003;' : '';
+    ngtToast('Kredensial Instagram & Threads <b>tersimpan</b>');
+  };
+  window.ngtTesIg = async function(){
+    var id = document.getElementById('ngtIgUserId').value.trim();
+    var tk = document.getElementById('ngtIgToken').value.trim();
+    var el = document.getElementById('ngtIgStatus');
+    if(!id || !tk){ el.innerHTML = 'Isi dulu <b>User ID & Access Token</b>'; return; }
+    el.innerHTML = 'Mengetes koneksi Instagram&hellip;';
+    try {
+      var j = await IG.test(id, tk);
+      el.innerHTML = 'Instagram terhubung &#10003; <b>@' + esc(j.username || j.id) + '</b>';
+    } catch(e){ el.innerHTML = 'Gagal: ' + esc(e.message); }
+  };
+  window.ngtTesThreads = async function(){
+    var id = document.getElementById('ngtThUserId').value.trim();
+    var tk = document.getElementById('ngtThToken').value.trim();
+    var el = document.getElementById('ngtThStatus');
+    if(!id || !tk){ el.innerHTML = 'Isi dulu <b>User ID & Access Token</b>'; return; }
+    el.innerHTML = 'Mengetes koneksi Threads&hellip;';
+    try {
+      var j = await TH.test(id, tk);
+      el.innerHTML = 'Threads terhubung &#10003; <b>@' + esc(j.username || j.id) + '</b>';
+    } catch(e){ el.innerHTML = 'Gagal: ' + esc(e.message); }
+  };
   async function initSetting(){
     renderHalaman();
     var s0 = ngtSession();
@@ -1068,6 +1235,13 @@
     if(wu && s0) wu.value = s0.webapp_url || '';
     var ws = document.getElementById('ngtWebappStatus');
     if(ws) ws.innerHTML = (s0 && s0.webapp_url) ? 'Menggunakan Web App <b>pribadi</b> &#10003;' : 'Menggunakan Web App <b>pusat</b>';
+    if(s0){
+      var _f = function(id, v){ var el = document.getElementById(id); if(el) el.value = v || ''; };
+      _f('ngtIgUserId', s0.ig_user_id); _f('ngtIgToken', s0.ig_token);
+      _f('ngtThUserId', s0.threads_user_id); _f('ngtThToken', s0.threads_token);
+      if(s0.ig_user_id) document.getElementById('ngtIgStatus').innerHTML = 'Instagram terhubung &#10003;';
+      if(s0.threads_user_id) document.getElementById('ngtThStatus').innerHTML = 'Threads terhubung &#10003;';
+    }
     var ai = await DB.ai.get();
     if(ai){
       document.getElementById('ngtAiModel').value = ai.model || 'gemini-2.5-flash';
@@ -1081,7 +1255,7 @@
   var titles = { pengaturan:'Setting', radar:'News Aggregator', studio:'Studio Konten', antrean:'Antrean Publish', komentar:'Komentar', insight:'Insight', panduan:'Panduan' };
 
   /* ============ PANDUAN ============ */
-  var NGT_PANDUAN_MD = "# Panduan Setup NewsGen Studio (untuk Pelanggan)\n\nAgar komentar Facebook masuk otomatis dan bisa dibalas dari dashboard,\npelanggan menyiapkan 2 hal milik sendiri: **Web App (Google)** dan\n**Aplikasi Meta (Facebook)**. Ikuti langkahnya berurutan \u2014 sekitar 20 menit.\n\nSiapkan dulu 3 catatan kecil (ditulis di kertas/notepad):\n- `KODE_WEBHOOK`: buat kode rahasia sendiri, mis. `toko-saya-123`\n- `URL_WEBAPP`: (diisi nanti di Bagian A)\n- `PAGE_ID`, `TOKEN`: (diisi nanti di Bagian B)\n\n---\n\n## Bagian A \u2014 Web App di Google (10 menit)\n\n1. Buka **Google Drive** \u2192 **New** \u2192 **Google Sheets**. Beri nama mis.\n   `NewsGen - NamaUsahaSaya`.\n2. Di spreadsheet itu klik **Extensions** \u2192 **Apps Script**.\n3. Di editor, hapus semua isi file `Code.gs`.\n4. Buka link ini di tab baru, salin **seluruh** isinya:\n   https://raw.githubusercontent.com/faizalground96-spec/newsgen-studio-app/main/apps-script.gs\n5. Tempel ke `Code.gs` \u2192 **Save** (ikon disket / Ctrl+S).\n6. Klik ikon **gerigi** (Project Settings) \u2192 bagian **Script Properties** \u2192\n   **Add script property**:\n   - Property: `FB_VERIFY_TOKEN`\n   - Value: `KODE_WEBHOOK` buatanmu tadi\n   \u2192 **Save script properties**.\n7. Klik **Deploy** \u2192 **New deployment** \u2192 ikon gerigi \u2192 pilih **Web app**:\n   - Execute as: **Me**\n   - Who has access: **Anyone**\n   \u2192 **Deploy** \u2192 **Authorize access** (ikuti sampai selesai).\n8. **Salin URL Web App** yang muncul (bentuknya\n   `https://script.google.com/macros/s/\u2026/exec`). Ini adalah `URL_WEBAPP`.\n   \u2705 Bagian A selesai \u2014 tidak perlu isi apa pun lagi di spreadsheet.\n\n## Bagian B \u2014 Aplikasi di Meta Developer (10 menit)\n\n1. Buka https://developers.facebook.com \u2192 login \u2192 **My Apps** \u2192\n   **Create App**. Pilih tipe **Business**, isi nama, buat.\n2. Di dashboard aplikasi, cari produk **Webhooks** \u2192 **Add**/**Set up**.\n3. Pilih objek **Page** \u2192 **Subscribe**, isi:\n   - Callback URL: `URL_WEBAPP` dari Bagian A\n   - Verify Token: `KODE_WEBHOOK` buatanmu\n   \u2192 **Verify and Save**. Di bagian **Subscription Fields**, centang **feed**.\n4. Dapatkan **Page ID**: buka halaman Facebook-mu \u2192 **Settings** \u2192\n   **Page info** (atau: `https://www.facebook.com/<nama-halaman>/about`) \u2014\n   catat angka Page ID.\n5. Dapatkan **Akses Token**:\n   - Buka https://developers.facebook.com/tools/explorer\n   - Pilih aplikasimu, klik **Generate Access Token**, login dengan akun\n     yang menjadi **admin halaman**\n   - Tambahkan permission: `pages_read_engagement`, `pages_manage_posts`\n   - Klik ikon info di token \u2192 **Open in Access Token Tool** \u2192\n     **Extend Access Token** (agar tidak cepat kedaluwarsa) \u2192 salin token\n     yang panjang itu. Ini adalah `TOKEN`.\n   - \u26a0\ufe0f Token ini rahasia \u2014 jangan disebar.\n6. Supaya halamanmu terhubung ke aplikasi: di **App Dashboard** \u2192\n   **Webhooks** \u2192 **Page** \u2192 **Add Subscription** untuk halamanmu\n   (atau lewat pengaturan halaman \u2192 Linked apps, tergantung tampilan Meta).\n\n## Bagian C \u2014 Masukkan ke NewsGen (3 menit)\n\n1. Login ke aplikasi NewsGen Studio.\n2. Buka menu **Setting** \u2192 bagian **\ud83d\udd17 Web App Pribadi**:\n   tempel `URL_WEBAPP` \u2192 **Simpan** \u2192 **Tes Koneksi**\n   (harus muncul \"Web App aktif \u2713\").\n3. Masih di **Setting** \u2192 **\ud83d\udcc4 Pengaturan Halaman** \u2192 **\uff0b Tambah Halaman**:\n   - Nama Halaman: nama halamanmu\n   - Page ID: `PAGE_ID`\n   - Akses Token: `TOKEN`\n   - Kode Webhook: `KODE_WEBHOOK`\n   \u2192 **Simpan**.\n4. Buka menu **Komentar** \u2192 nyalakan **Auto-Polling**.\n   Setiap ada komentar baru di halaman Facebook-mu, akan muncul di sini\n   dan bisa dibalas. \ud83c\udf89\n\n---\n\n## Kalau ada masalah\n\n| Gejala | Periksa |\n|---|---|\n| Tes Koneksi gagal | URL Web App disalin lengkap? Deploy-nya \"Who has access: Anyone\"? |\n| Komentar tidak masuk | Di Meta \u2192 Webhooks \u2192 Page: status subscribe hijau? Field `feed` dicentang? Verify Token sama dengan `FB_VERIFY_TOKEN`? |\n| Gagal simpan halaman | Page ID angka semua? Token tidak terpotong saat disalin? |\n| Token tiba-tiba tidak jalan | Token kedaluwarsa \u2014 buat ulang di Bagian B langkah 5 |\n\nButuh bantuan? Hubungi admin via WhatsApp yang tertera di halaman penjualan.\n";
+  var NGT_PANDUAN_MD = "# Panduan Setup NewsGen Studio (untuk Pelanggan)\n\nAgar komentar Facebook masuk otomatis dan bisa dibalas dari dashboard,\npelanggan menyiapkan 2 hal milik sendiri: **Web App (Google)** dan\n**Aplikasi Meta (Facebook)**. Ikuti langkahnya berurutan \u2014 sekitar 20 menit.\n\nSiapkan dulu 3 catatan kecil (ditulis di kertas/notepad):\n- `KODE_WEBHOOK`: buat kode rahasia sendiri, mis. `toko-saya-123`\n- `URL_WEBAPP`: (diisi nanti di Bagian A)\n- `PAGE_ID`, `TOKEN`: (diisi nanti di Bagian B)\n\n---\n\n## Bagian A \u2014 Web App di Google (10 menit)\n\n1. Buka **Google Drive** \u2192 **New** \u2192 **Google Sheets**. Beri nama mis.\n   `NewsGen - NamaUsahaSaya`.\n2. Di spreadsheet itu klik **Extensions** \u2192 **Apps Script**.\n3. Di editor, hapus semua isi file `Code.gs`.\n4. Buka link ini di tab baru, salin **seluruh** isinya:\n   https://raw.githubusercontent.com/faizalground96-spec/newsgen-studio-app/main/apps-script.gs\n5. Tempel ke `Code.gs` \u2192 **Save** (ikon disket / Ctrl+S).\n6. Klik ikon **gerigi** (Project Settings) \u2192 bagian **Script Properties** \u2192\n   **Add script property**:\n   - Property: `FB_VERIFY_TOKEN`\n   - Value: `KODE_WEBHOOK` buatanmu tadi\n   \u2192 **Save script properties**.\n7. Klik **Deploy** \u2192 **New deployment** \u2192 ikon gerigi \u2192 pilih **Web app**:\n   - Execute as: **Me**\n   - Who has access: **Anyone**\n   \u2192 **Deploy** \u2192 **Authorize access** (ikuti sampai selesai).\n8. **Salin URL Web App** yang muncul (bentuknya\n   `https://script.google.com/macros/s/\u2026/exec`). Ini adalah `URL_WEBAPP`.\n   \u2705 Bagian A selesai \u2014 tidak perlu isi apa pun lagi di spreadsheet.\n\n## Bagian B \u2014 Aplikasi di Meta Developer (10 menit)\n\n1. Buka https://developers.facebook.com \u2192 login \u2192 **My Apps** \u2192\n   **Create App**. Pilih tipe **Business**, isi nama, buat.\n2. Di dashboard aplikasi, cari produk **Webhooks** \u2192 **Add**/**Set up**.\n3. Pilih objek **Page** \u2192 **Subscribe**, isi:\n   - Callback URL: `URL_WEBAPP` dari Bagian A\n   - Verify Token: `KODE_WEBHOOK` buatanmu\n   \u2192 **Verify and Save**. Di bagian **Subscription Fields**, centang **feed**.\n4. Dapatkan **Page ID**: buka halaman Facebook-mu \u2192 **Settings** \u2192\n   **Page info** (atau: `https://www.facebook.com/<nama-halaman>/about`) \u2014\n   catat angka Page ID.\n5. Dapatkan **Akses Token**:\n   - Buka https://developers.facebook.com/tools/explorer\n   - Pilih aplikasimu, klik **Generate Access Token**, login dengan akun\n     yang menjadi **admin halaman**\n   - Tambahkan permission: `pages_read_engagement`, `pages_manage_posts`\n   - Klik ikon info di token \u2192 **Open in Access Token Tool** \u2192\n     **Extend Access Token** (agar tidak cepat kedaluwarsa) \u2192 salin token\n     yang panjang itu. Ini adalah `TOKEN`.\n   - \u26a0\ufe0f Token ini rahasia \u2014 jangan disebar.\n6. Supaya halamanmu terhubung ke aplikasi: di **App Dashboard** \u2192\n   **Webhooks** \u2192 **Page** \u2192 **Add Subscription** untuk halamanmu\n   (atau lewat pengaturan halaman \u2192 Linked apps, tergantung tampilan Meta).\n\n## Bagian C \u2014 Masukkan ke NewsGen (3 menit)\n\n1. Login ke aplikasi NewsGen Studio.\n2. Buka menu **Setting** \u2192 bagian **\ud83d\udd17 Web App Pribadi**:\n   tempel `URL_WEBAPP` \u2192 **Simpan** \u2192 **Tes Koneksi**\n   (harus muncul \"Web App aktif \u2713\").\n3. Masih di **Setting** \u2192 **\ud83d\udcc4 Pengaturan Halaman** \u2192 **\uff0b Tambah Halaman**:\n   - Nama Halaman: nama halamanmu\n   - Page ID: `PAGE_ID`\n   - Akses Token: `TOKEN`\n   - Kode Webhook: `KODE_WEBHOOK`\n   \u2192 **Simpan**.\n4. Buka menu **Komentar** \u2192 nyalakan **Auto-Polling**.\n   Setiap ada komentar baru di halaman Facebook-mu, akan muncul di sini\n   dan bisa dibalas. \ud83c\udf89\n\n---\n\n## Bagian D \u2014 Instagram & Threads (opsional, 10 menit)\n\nSupaya tombol **Terbitkan Sekarang** di Studio Konten bisa mengunggah langsung ke\nInstagram dan Threads, siapkan kredensial berikut di aplikasi Meta yang sama\ndengan Bagian B.\n\n### D1. Instagram\n\n1. Pastikan akun Instagram-mu adalah akun **Business** atau **Kreator**\n   (di aplikasi Instagram: Settings \u2192 Account type \u2192 Switch to professional),\n   lalu tautkan ke **Halaman Facebook**-mu\n   (Settings \u2192 Account centre \u2192 Set up Accounts Centre).\n2. Di https://developers.facebook.com \u2192 **My Apps** \u2192 pilih aplikasimu \u2192\n   **Add Product** \u2192 **Instagram** (atau buka Use Cases \u2192 tambahkan\n   **Instagram API**).\n3. Tambahkan izin: `instagram_basic` dan **`instagram_business_content_publish`**.\n4. Dapatkan **Instagram User ID**: buka\n   https://developers.facebook.com/tools/explorer \u2192 pilih aplikasimu \u2192\n   panggil `GET /me/accounts` \u2192 cari halamanmu \u2192 catat\n   `instagram_business_account.id` (angka panjang, cth. `1784140\u2026`).\n5. Dapatkan **Access Token**: di Graph API Explorer yang sama, Generate\n   Access Token dengan izin di langkah 3 \u2192 **Extend Access Token**\n   (berlaku \u00b160 hari, perpanjang sebelum kedaluwarsa) \u2192 salin.\n\n### D2. Threads\n\n1. Di dashboard aplikasimu \u2192 **Add Product** / Use Cases \u2192 **Threads API**.\n2. Tambahkan izin: `threads_basic` dan **`threads_content_publish`**.\n3. Dapatkan **Threads User ID**: di Graph API Explorer panggil\n   `GET https://graph.threads.net/v1.0/me?fields=id,username`\n   dengan token Threads-mu \u2192 catat `id`-nya.\n4. Dapatkan **Access Token**: Generate Token di pengaturan Threads API\n   (berlaku \u00b160 hari) \u2192 salin.\n\n### D3. Masukkan ke NewsGen\n\n1. Login ke aplikasi NewsGen Studio \u2192 menu **Setting** \u2192\n   bagian **\ud83d\udcf8 Instagram & Threads**.\n2. Isi **Instagram User ID** + **Access Token** \u2192 **Tes Instagram**\n   (harus muncul `@username`-mu \u2713).\n3. Isi **Threads User ID** + **Access Token** \u2192 **Tes Threads**.\n4. Klik **Simpan**.\n5. Di **Studio Konten** (AI News langkah 3 / Post Manual), centang\n   **Instagram** / **Threads** di bagian \"Terbitkan ke\", lalu\n   **\ud83d\ude80 Terbitkan Sekarang**. Kartu visual / media otomatis diunggah\n   lalu diterbitkan via API resmi Meta.\n\nCatatan:\n- Instagram **wajib pakai gambar/video** (tidak bisa teks saja).\n- Token Meta kedaluwarsa \u00b160 hari \u2014 kalau tiba-tiba gagal terbit,\n  buat ulang tokennya dan simpan ulang di Setting.\n\n## Kalau ada masalah\n\n| Gejala | Periksa |\n|---|---|\n| Tes Koneksi gagal | URL Web App disalin lengkap? Deploy-nya \"Who has access: Anyone\"? |\n| Komentar tidak masuk | Di Meta \u2192 Webhooks \u2192 Page: status subscribe hijau? Field `feed` dicentang? Verify Token sama dengan `FB_VERIFY_TOKEN`? |\n| Gagal simpan halaman | Page ID angka semua? Token tidak terpotong saat disalin? |\n| Token tiba-tiba tidak jalan | Token kedaluwarsa \u2014 buat ulang di Bagian B langkah 5 |\n\nButuh bantuan? Hubungi admin via WhatsApp yang tertera di halaman penjualan.\n";
   function ngtMd2Html(md){
     var lines = md.split('\n'), html = '', inList = null, inTable = false;
     function inline(s){
@@ -1240,9 +1414,34 @@
     if(ngtJenisAktif!=='teks' && !file){ ngtToast('Pilih dulu <b>file media</b>nya'); return null; }
     return { halaman: document.getElementById('ngtManualHalaman').value, teks: teks, file: file };
   }
-  window.ngtManualTerbit = function(){
+  window.ngtManualTerbit = async function(){
     var d = ngtValidasiManual(); if(!d) return;
-    ngtToast('<b>' + ngtJenisLabel() + '</b> diterbitkan ke <b>' + esc(d.halaman) + '</b> (simulasi)');
+    var plats = ngtPlatTerpilih('ngtPlatManual');
+    if(!plats.length){ ngtToast('Pilih dulu <b>platform</b> tujuannya'); return; }
+    var hasil = [], gagal = [];
+    try {
+      var mediaUrl = null, isVideo = false;
+      var butuhMedia = plats.indexOf('instagram') >= 0 || (plats.indexOf('threads') >= 0 && d.file);
+      if(butuhMedia){
+        if(!d.file) throw new Error('Instagram wajib pakai gambar/video — pilih file media dulu');
+        ngtToast('Mengunggah media&hellip;');
+        isVideo = (d.file.type || '').indexOf('video') === 0;
+        mediaUrl = await ngtUploadMedia(d.file, d.file.name || 'media');
+      }
+      if(plats.indexOf('instagram') >= 0){
+        if(isVideo) await IG.publishVideo(mediaUrl, d.teks); else await IG.publishImage(mediaUrl, d.teks);
+        hasil.push('Instagram');
+      }
+      if(plats.indexOf('threads') >= 0){
+        await TH.publish({ type:d.file ? (isVideo ? 'VIDEO' : 'IMAGE') : 'TEXT', text:d.teks, mediaUrl:mediaUrl });
+        hasil.push('Threads');
+      }
+    } catch(e){ gagal.push(e.message); }
+    var msg = '';
+    if(hasil.length) msg += 'Terbit di <b>' + hasil.join('</b>, <b>') + '</b> &#10003;';
+    if(gagal.length) msg += (msg ? '<br>' : '') + 'Gagal: ' + esc(gagal.join('; '));
+    if(plats.indexOf('facebook') >= 0) msg += (msg ? '<br>' : '') + '<b>' + ngtJenisLabel() + '</b> diterbitkan ke <b>' + esc(d.halaman) + '</b> (simulasi)';
+    ngtToast(msg || 'Tidak ada platform dipilih');
   };
   window.ngtManualAntre = function(){
     var d = ngtValidasiManual(); if(!d) return;
@@ -1353,8 +1552,7 @@
       '<div class="src">' + esc(document.getElementById('aiHalaman').value || '') + ' &bull; ' + hariIni() + '</div>';
   }
   // Download PNG 1080x1350 via canvas
-  window.aiDownload = function(){
-    if(!aiW.judul){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
+  function aiBuatKartuCanvas(){
     var c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
     var x = c.getContext('2d');
     var g = x.createLinearGradient(0,0,1080,1350);
@@ -1371,9 +1569,18 @@
     x.fillText(baris, 70, y);
     x.fillStyle = '#a1a1aa'; x.font = '400 30px sans-serif';
     x.fillText((document.getElementById('aiHalaman').value || '') + '  •  ' + hariIni(), 70, 1250);
+    return c;
+  }
+  window.aiKartuBlob = function(){
+    return new Promise(function(res, rej){
+      aiBuatKartuCanvas().toBlob(function(b){ b ? res(b) : rej(new Error('Gagal membuat gambar kartu')); }, 'image/png');
+    });
+  };
+  window.aiDownload = function(){
+    if(!aiW.judul){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
     var a = document.createElement('a');
     a.download = 'newsgen-kartu.png';
-    a.href = c.toDataURL('image/png');
+    a.href = aiBuatKartuCanvas().toDataURL('image/png');
     a.click();
     ngtToast('Kartu <b>terdownload</b> (1080&times;1350)');
   };
@@ -1386,11 +1593,29 @@
       tipe: 'AI News'
     };
   }
-  window.aiTerbit = function(){
+  window.aiTerbit = async function(){
     if(!aiW.judul){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
     var p = aiPayload();
     DB.arsip.tulis({ aksi:'terbit', judul:p.judul, halaman:p.halaman, waktu:new Date().toISOString() });
-    ngtToast('<b>Diterbitkan</b> ke ' + esc(p.halaman) + ' (simulasi)');
+    var plats = ngtPlatTerpilih('ngtPlatAi');
+    if(!plats.length){ ngtToast('Pilih dulu <b>platform</b> tujuannya'); return; }
+    var caption = p.judul + (p.caption ? '\n\n' + p.caption : '');
+    var hasil = [], gagal = [];
+    try {
+      var mediaUrl = null;
+      if(plats.indexOf('instagram') >= 0 || plats.indexOf('threads') >= 0){
+        ngtToast('Mengunggah kartu visual&hellip;');
+        var blob = await window.aiKartuBlob();
+        mediaUrl = await ngtUploadMedia(blob, 'kartu.png');
+      }
+      if(plats.indexOf('instagram') >= 0){ await IG.publishImage(mediaUrl, caption); hasil.push('Instagram'); }
+      if(plats.indexOf('threads') >= 0){ await TH.publish({ type:'IMAGE', text:caption, mediaUrl:mediaUrl }); hasil.push('Threads'); }
+    } catch(e){ gagal.push(e.message); }
+    var msg = '';
+    if(hasil.length) msg += 'Terbit di <b>' + hasil.join('</b>, <b>') + '</b> &#10003;';
+    if(gagal.length) msg += (msg ? '<br>' : '') + 'Gagal: ' + esc(gagal.join('; '));
+    if(plats.indexOf('facebook') >= 0) msg += (msg ? '<br>' : '') + 'Facebook: <b>Diterbitkan</b> ke ' + esc(p.halaman) + ' (simulasi)';
+    ngtToast(msg || 'Tidak ada platform dipilih');
   };
   window.aiDraft = function(){
     if(!aiW.judul){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
