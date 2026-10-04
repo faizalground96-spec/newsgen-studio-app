@@ -381,6 +381,7 @@
             <button class="ngt-btn small ghost" id="kmPollBtn" onclick="kmPolling()">&#128260; Auto-Polling: OFF</button>
             <button class="ngt-btn small ghost" onclick="kmGenSemua()">&#10024; Generate Semua Balasan</button>
             <button class="ngt-btn small green" onclick="kmKirimSemua()">&#128640; Kirim Semua</button>
+            <button class="ngt-btn small ghost" id="kmRiwayatBtn" onclick="kmViewRiwayat()">&#128220; Riwayat</button>
           </div>
           <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
             <label class="ngt-switch"><input type="checkbox" checked id="kmAutoReply"><span class="sl"></span></label>
@@ -1240,7 +1241,7 @@
   };
 
   // ============ SISTEM KOMENTAR (ala contoh) ============
-  var kmState = { list:[], tab:'semua', q:'', polling:false, timer:null };
+  var kmState = { list:[], tab:'semua', q:'', polling:false, timer:null, view:'antrean' };
   // Simulasi AI: balas komentar dengan gaya natural (produksi: panggil AI via backend)
   function kmAiReply(pesan){
     var p = pesan.toLowerCase();
@@ -1283,7 +1284,51 @@
   }
   window.kmTab = function(p){ kmState.tab = p; kmRenderTabs(); kmRender(); };
   window.kmCari = function(q){ kmState.q = q.toLowerCase(); kmRender(); };
+  function kmRiwayatKey(){ return 'ngt_riwayat_' + ngtPid(); }
+  function kmRiwayatLoad(){
+    try { return JSON.parse(localStorage.getItem(kmRiwayatKey()) || '[]'); }
+    catch(e){ return []; }
+  }
+  function kmRiwayatSave(r){
+    var h = kmRiwayatLoad();
+    h.unshift(r);
+    if(h.length > 500) h = h.slice(0, 500);
+    try { localStorage.setItem(kmRiwayatKey(), JSON.stringify(h)); } catch(e){}
+  }
+  window.kmViewRiwayat = function(){
+    kmState.view = (kmState.view === 'riwayat') ? 'antrean' : 'riwayat';
+    var btn = document.getElementById('kmRiwayatBtn');
+    if(btn) btn.innerHTML = kmState.view === 'riwayat' ? '&#128203; Antrean' : '&#128220; Riwayat';
+    kmRender();
+  };
+  window.kmHapusRiwayat = function(){
+    if(!confirm('Hapus seluruh riwayat balasan di perangkat ini?')) return;
+    try { localStorage.removeItem(kmRiwayatKey()); } catch(e){}
+    kmRender();
+    ngtToast('Riwayat perangkat ini <b>dihapus</b>');
+  };
+  function kmRenderRiwayat(){
+    var h = kmRiwayatLoad();
+    var q = kmState.q || '';
+    var list = h.filter(function(r){
+      return !q || (String(r.nama||'') + ' ' + String(r.pesan||'') + ' ' + String(r.balasan||'')).toLowerCase().indexOf(q) >= 0;
+    });
+    document.getElementById('kmTabs').innerHTML = '';
+    var el = document.getElementById('kmList');
+    if(!list.length){ el.innerHTML = '<div class="ngt-card" style="text-align:center;color:#71717a;">Belum ada riwayat balasan di perangkat ini.</div>'; return; }
+    el.innerHTML = '<p class="ngt-muted" style="margin:0 0 10px">Riwayat tersimpan <b style="color:#fff">di perangkat ini saja</b> (' + h.length + ' balasan).</p>'
+      + list.map(function(r){
+        return '<div class="ngt-card ngt-komen"><div class="ngt-news"><div class="ngt-avatar">' + kmAvatar(r.nama||'?') + '</div>'
+          + '<div class="body"><div class="meta"><b style="color:#fff;font-size:14px">' + esc(r.nama||'') + '</b>'
+          + '<span class="ngt-muted"> &bull; ' + esc(r.halaman||'') + ' &bull; terkirim ' + esc(r.terkirim||'') + '</span></div>'
+          + '<p style="margin-top:6px">' + esc(r.pesan||'') + '</p>'
+          + '<div class="reply"><b>&#129302; Balasan terkirim</b>' + esc(r.balasan||'') + '</div>'
+          + '</div></div></div>';
+      }).join('')
+      + '<div style="text-align:center;margin-top:10px"><button class="ngt-btn small ghost" onclick="kmHapusRiwayat()">Hapus Riwayat Perangkat Ini</button></div>';
+  }
   function kmRender(){
+    if(kmState.view === 'riwayat'){ kmRenderRiwayat(); return; }
     var list = kmState.list.filter(function(k){
       var okTab = kmState.tab==='semua' || k.halaman===kmState.tab;
       var okQ = !kmState.q || (k.nama+' '+k.pesan).toLowerCase().indexOf(kmState.q) >= 0;
@@ -1332,6 +1377,7 @@
     if(!k) return;
     var ta = document.getElementById('kmBalas_' + id);
     var balasan = ta ? ta.value : (k.balasan || '');
+    kmRiwayatSave({ id:k.id, nama:k.nama, halaman:k.halaman, waktu:k.waktu, pesan:k.pesan, balasan:balasan, terkirim:new Date().toLocaleString('id-ID') });
     DB.komentar.update(id, { balasan:balasan, status:'terkirim' }); // backend otomatis menghapus barisnya
     kmState.list = kmState.list.filter(function(x){ return x.id !== id; });
     kmRender();
@@ -1343,6 +1389,7 @@
       if(k.status!=='terkirim'){
         var ta = document.getElementById('kmBalas_' + k.id);
         var balasan = ta ? ta.value : (k.balasan || kmAiReply(k.pesan));
+        kmRiwayatSave({ id:k.id, nama:k.nama, halaman:k.halaman, waktu:k.waktu, pesan:k.pesan, balasan:balasan, terkirim:new Date().toLocaleString('id-ID') });
         DB.komentar.update(k.id, { balasan:balasan, status:'terkirim' }); // backend otomatis menghapus barisnya
         ids.push(k.id);
         n++;
