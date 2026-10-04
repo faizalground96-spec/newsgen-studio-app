@@ -517,14 +517,24 @@
   /* ============ SESI PELANGGAN (multi-tenant) ============
      Setiap pelanggan login (email + PIN). Session di sessionStorage.
      Semua data difilter per pelanggan_id (pid). */
+  var ngtMemSession = null; // fallback kalau sessionStorage diblokir (mis. iframe sandbox)
   function ngtSession(){
+    if(ngtMemSession) return ngtMemSession;
     try { return JSON.parse(sessionStorage.getItem('ngt_session') || 'null'); }
     catch(e){ return null; }
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) }));
-    else sessionStorage.removeItem('ngt_session');
+    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
+    ngtMemSession = d;
+    try {
+      if(d) sessionStorage.setItem('ngt_session', JSON.stringify(d));
+      else sessionStorage.removeItem('ngt_session');
+    } catch(e){}
+  }
+  function ngtStorageOK(){
+    try { sessionStorage.setItem('__ngt_t','1'); sessionStorage.removeItem('__ngt_t'); return true; }
+    catch(e){ return false; }
   }
   window.ngtDoLogin = function(){
     var email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -532,7 +542,7 @@
     var err = document.getElementById('login-err');
     err.style.display = 'none';
     if(!email || !pin){ err.textContent = 'Isi email dan PIN dulu.'; err.style.display = 'block'; return; }
-    function ok(p){ ngtSetSession(p); location.reload(); }
+    function ok(p){ ngtSetSession(p); if(ngtStorageOK()){ location.reload(); } else if(window.ngtEnterApp){ window.ngtEnterApp(); } }
     function gagal(){ err.textContent = 'Email / PIN salah.'; err.style.display = 'block'; }
     if(CONFIG.dummy){
       var p = DUMMY_PELANGGAN.find(function(x){ return x.email === email && x.pin === pin; });
@@ -726,14 +736,24 @@
   /* ============ SESI PELANGGAN (multi-tenant) ============
      Setiap pelanggan login (email + PIN) -> session di sessionStorage.
      Semua data difilter per pelanggan_id, baik mode dummy maupun backend. */
+  var ngtMemSession = null; // fallback kalau sessionStorage diblokir (mis. iframe sandbox)
   function ngtSession(){
+    if(ngtMemSession) return ngtMemSession;
     try { return JSON.parse(sessionStorage.getItem('ngt_session') || 'null'); }
     catch(e){ return null; }
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) }));
-    else sessionStorage.removeItem('ngt_session');
+    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
+    ngtMemSession = d;
+    try {
+      if(d) sessionStorage.setItem('ngt_session', JSON.stringify(d));
+      else sessionStorage.removeItem('ngt_session');
+    } catch(e){}
+  }
+  function ngtStorageOK(){
+    try { sessionStorage.setItem('__ngt_t','1'); sessionStorage.removeItem('__ngt_t'); return true; }
+    catch(e){ return false; }
   }
 
   /* ============ DATA LAYER HYBRID (satu pintu) ============
@@ -809,7 +829,7 @@
         if(CONFIG.dummy){ dummySave('ai_' + ngtPid(), d); return Promise.resolve(d); }
         if(Supa.ok()) return Supa.update('pelanggan', ngtPid(), { model:d.model, apiKey:d.apiKey }).then(function(){
           var s = ngtSession();
-          if(s){ s.model = d.model; s.apiKey = d.apiKey; sessionStorage.setItem('ngt_session', JSON.stringify(s)); }
+          if(s){ s.model = d.model; s.apiKey = d.apiKey; try { sessionStorage.setItem('ngt_session', JSON.stringify(s)); } catch(e){} }
           return d;
         }).catch(function(){ return backendBelum('supabase'); });
         return backendBelum('supabase');
@@ -880,6 +900,17 @@
     }
   };
 
+  // Masuk ke aplikasi (dipakai saat init & saat login tanpa reload)
+  function ngtEnterApp(){
+    document.getElementById('ngt-login').style.display = 'none';
+    var appEl = document.querySelector('.ngt');
+    if(appEl) appEl.style.display = '';
+    var s = ngtSession();
+    var el = document.getElementById('ngtUser'); if(el && s) el.textContent = s.nama;
+    try { initSetting(); } catch(e){}
+    try { ngtIsiHalamanSelect(); } catch(e){}
+  }
+  window.ngtEnterApp = ngtEnterApp;
   // Gate: belum login -> tampilkan layar login, hentikan init
   if(!ngtSession()){
     document.getElementById('ngt-login').style.display = 'flex';
@@ -889,6 +920,7 @@
     [em, pn].forEach(function(i){ if(i) i.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.ngtDoLogin(); }); });
     return;
   }
+  ngtEnterApp();
 
   /* ============ UI: PENGATURAN HALAMAN ============ */
   function maskToken(t){
@@ -997,7 +1029,7 @@
     if(u && !/^https:\/\/script\.google\.com\/macros\/s\//.test(u)){ ngtToast('URL Web App <b>tidak valid</b>'); return; }
     await Supa.update('pelanggan', s.id, { webapp_url: u });
     s.webapp_url = u;
-    sessionStorage.setItem('ngt_session', JSON.stringify(s));
+    try { sessionStorage.setItem('ngt_session', JSON.stringify(s)); } catch(e){}
     document.getElementById('ngtWebappStatus').innerHTML = u ? 'Menggunakan Web App <b>pribadi</b> &#10003;' : 'Menggunakan Web App <b>pusat</b>';
     ngtToast('URL Web App <b>tersimpan</b>');
   };
@@ -1028,9 +1060,7 @@
     var mb = document.getElementById('ngtHalamanModalBg');
     if(mb) mb.addEventListener('click', function(e){ if(e.target===this) ngtCloseHalamanModal(); });
   }
-  (function(){ var s = ngtSession(); var el = document.getElementById('ngtUser'); if(el && s) el.textContent = s.nama; })();
-  initSetting();
-  ngtIsiHalamanSelect();
+
   var titles = { pengaturan:'Setting', radar:'News Aggregator', studio:'Studio Konten', antrean:'Antrean Publish', komentar:'Komentar', insight:'Insight', panduan:'Panduan' };
 
   /* ============ PANDUAN ============ */
