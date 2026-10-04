@@ -485,7 +485,7 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email }));
+    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url }));
     else sessionStorage.removeItem('ngt_session');
   }
   window.ngtDoLogin = function(){
@@ -511,32 +511,29 @@
     location.reload();
   };
   /* ============================================================
-     KONFIGURASI DATA & BACKEND HYBRID
+     KONFIGURASI DATA & BACKEND (arsitektur final 2026-10-04)
      - dummy: true  -> pakai DATA DUMMY (DUMMY_DB + localStorage).
-       Perubahan tersimpan di browser ini saja. Cocok untuk uji coba.
-     - dummy: false -> pakai BACKEND ASLI di bawah (hybrid).
+     - dummy: false -> pakai BACKEND ASLI.
 
-     ARSITEKTUR HYBRID (kenapa 3 backend?):
-     - Supabase  : data terstruktur yang butuh CEPAT
-                   (halaman, ai_settings, antrean, draft, pelanggan).
-                   Postgres REST, free tier lega.
-     - Firebase  : data REALTIME (komentar + status auto-reply).
-                   Realtime Database cocok untuk polling komentar.
-     - Spreadsheet: ARSIP & LOG (riwayat publish, arsip komentar).
-                   Append-only, lambat tidak masalah, selalu GRATIS.
-     Aturan fallback: bila backend utama gagal/limit -> otomatis
-     fallback ke Spreadsheet (gratis) agar layanan tetap jalan.
+     Supabase (2 tabel ringan, tidak bisa bengkak):
+       pelanggan : id, nama, email, pin, paket, model, apiKey, webapp_url
+       halaman   : id, pelanggan_id, nama, pageId, token, webhook
+     Spreadsheet per pelanggan (via Web App apps-script.gs, 1 pintu):
+       Komentar (utama), Arsip, Config. Tiap pelanggan bisa diarahkan
+       ke Web App (akun Google) berbeda lewat kolom webapp_url di tabel
+       pelanggan — buat jaga kuota harian.
+     localStorage browser: draft (selalu lokal, tidak ke backend).
+     Facebook: antrean/jadwal publish (scheduled posts) — aplikasi
+       menjadwalkan via Graph API, lalu tinggal menampilkan.
 
      CARA AKTIFKAN: isi BACKEND_CONFIG di bawah, lalu set
-     CONFIG.dummy = false. Kredensial JANGAN taruh di kode publik
-     bila page dishare — pakai akun backend milik sendiri.
+     CONFIG.dummy = false.
   ============================================================ */
   const CONFIG = { dummy: true };
 
   const BACKEND_CONFIG = {
     supabase:    { url: '', anonKey: '' },   // cth: https://xyz.supabase.co
-    firebase:    { databaseURL: '' },        // cth: https://newsgen-xxx-default-rtdb.asia-southeast1.firebasedatabase.app
-    spreadsheet: { webAppUrl: '' }           // URL Web App dari apps-script.gs
+    spreadsheet: { webAppUrl: '' }           // URL Web App UTAMA (dipakai bila baris pelanggan tak punya webapp_url)
   };
 
   /* ============ DATA DUMMY (dipakai saat dummy:true) ============
@@ -574,7 +571,7 @@
   };
 
   /* ============ KLIEN SUPABASE (REST, tanpa SDK) ============
-     Tabel yang dipakai: halaman, ai_settings, antrean, draft, pelanggan */
+     Tabel yang dipakai: pelanggan, halaman */
   const Supa = {
     ok(){ return !!(BACKEND_CONFIG.supabase.url && BACKEND_CONFIG.supabase.anonKey); },
     async req(table, method, body, query){
@@ -594,40 +591,93 @@
     remove(table, id){ return this.req(table, 'DELETE', null, '?id=eq.' + encodeURIComponent(id)); }
   };
 
-  /* ============ KLIEN FIREBASE RTDB (REST, tanpa SDK) ============
-     Path yang dipakai: komentar, auto_reply_state */
-  const Fb = {
-    ok(){ return !!BACKEND_CONFIG.firebase.databaseURL; },
-    base(){ return BACKEND_CONFIG.firebase.databaseURL.replace(/\/$/,''); },
-    async req(path, method, body){
-      const res = await fetch(this.base() + '/' + path + '.json', {
-        method: method, body: body !== undefined ? JSON.stringify(body) : undefined
-      });
-      if(!res.ok) throw new Error('Firebase ' + res.status);
+  /* ============ KLIEN SPREADSHEET (via Apps Script Web App) ============
+     1 Web App melayani banyak pelanggan; routing per pid dikerjakan di
+     sisi Web App (sheet MASTER "Pelanggan": page_id -> spreadsheet).
+     URL Web App diambil dari kolom webapp_url baris pelanggan (saat login),
+     fallback ke BACKEND_CONFIG.spreadsheet.webAppUrl. */
+  const Sheet = {
+    base(){
+      var s = ngtSession();
+      var u = (s && s.webapp_url) || BACKEND_CONFIG.spreadsheet.webAppUrl || '';
+      return u.replace(/\/$/,'');
+    },
+    ok(){ return !!this.base(); },
+    async callg(params){
+      var q = Object.keys(params).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      const res = await fetch(this.base() + '?' + q);
+      if(!res.ok) throw new Error('WebApp ' + res.status);
       return res.json();
     },
-    async list(path){
-      const o = await this.req(path, 'GET');
-      return o ? Object.keys(o).map(k => Object.assign({ id:k }, o[k])) : [];
+    async callp(action, data){
+      const res = await fetch(this.base(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action, pid: ngtPid() }, data || {}))
+      });
+      if(!res.ok) throw new Error('WebApp ' + res.status);
+      return res.json();
     },
-    push(path, val){ return this.req(path, 'POST', val); },
-    set(path, val){ return this.req(path, 'PUT', val); },
-    remove(path){ return this.req(path, 'DELETE'); }
+    komentarList(){ return this.callg({ action:'komentar', pid:ngtPid() }).then(function(r){ return (r && r.rows) || []; }); },
+    komentarUpdate(id, patch){ return this.callp('komentar_update', { id:id, patch:patch }); },
+    configGet(){ return this.callg({ action:'config', pid:ngtPid() }).then(function(r){ return (r && r.config) || {}; }); },
+    configSet(kunci, nilai){ return this.callp('config_set', { kunci:kunci, nilai:nilai }); },
+    arsip(row){ return this.callp('arsip', { row:row }).catch(function(){ return null; }); },
+    list(sheet){ return this.callp('list', { sheet:sheet }).then(function(r){ return (r && r.rows) || []; }); },
+    append(sheet, row){ return this.callp('append', { sheet:sheet, row:row }); }
   };
 
-  /* ============ KLIEN SPREADSHEET (via Apps Script) ============
-     Dipakai untuk ARSIP/LOG + fallback darurat. Lihat apps-script.gs */
-  const Sheet = {
-    ok(){ return !!BACKEND_CONFIG.spreadsheet.webAppUrl; },
-    async call(action, data){
-      const res = await fetch(BACKEND_CONFIG.spreadsheet.webAppUrl, {
-        method: 'POST', body: JSON.stringify(Object.assign({ action: action }, data || {}))
-      });
-      if(!res.ok) throw new Error('Spreadsheet ' + res.status);
-      return res.json();
+  /* ============ KLIEN FACEBOOK GRAPH API ============
+     Dipakai untuk antrean: baca scheduled_posts, jadwalkan, hapus jadwal.
+     Token diambil dari tabel halaman (menu Setting). */
+  const FB = {
+    ver: 'v21.0',
+    async api(pageId, token, edge, method, params){
+      var q = Object.keys(params || {}).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      var url = 'https://graph.facebook.com/' + this.ver + '/' + pageId + '/' + edge + '?access_token=' + encodeURIComponent(token) + (q ? '&' + q : '');
+      const res = await fetch(url, { method: method || 'GET' });
+      const j = await res.json();
+      if(!res.ok || j.error) throw new Error((j.error && j.error.message) || ('FB ' + res.status));
+      return j;
     },
-    list(sheet){ return this.call('list', { sheet: sheet }).then(r => (r && r.rows) || []); },
-    append(sheet, row){ return this.call('append', { sheet: sheet, row: row }); }
+    async scheduledPosts(halamanList){
+      var out = [];
+      for(var i = 0; i < halamanList.length; i++){
+        var h = halamanList[i];
+        if(!h.pageId || !h.token) continue;
+        try {
+          var j = await this.api(h.pageId, h.token, 'scheduled_posts', 'GET', { fields: 'id,message,scheduled_publish_time', limit: 50 });
+          (j.data || []).forEach(function(p){
+            var t = p.scheduled_publish_time ? new Date(p.scheduled_publish_time * 1000) : null;
+            out.push({
+              id: p.id, _pageId: h.pageId, _token: h.token,
+              judul: (p.message || '(tanpa teks)').slice(0, 80),
+              halaman: h.nama,
+              jadwal: t ? t.toLocaleString('id-ID') : '-',
+              tipe: 'Facebook', _ts: t ? t.getTime() : 0
+            });
+          });
+        } catch(e){ /* halaman tanpa token valid dilewati */ }
+      }
+      out.sort(function(a,b){ return a._ts - b._ts; });
+      FB._cache = out;
+      return out;
+    },
+    async schedulePost(halaman, message, datetimeStr){
+      // datetimeStr format: "2026-10-05 18:00" (WIB)
+      var ts = Math.floor(new Date(datetimeStr.replace(' ', 'T') + ':00+07:00').getTime() / 1000);
+      if(!ts || isNaN(ts)) throw new Error('Format jadwal salah. Contoh: 2026-10-05 18:00');
+      if(ts < Math.floor(Date.now()/1000) + 600) throw new Error('Jadwal minimal 10 menit dari sekarang');
+      return this.api(halaman.pageId, halaman.token, 'feed', 'POST', { message: message, published: 'false', scheduled_publish_time: String(ts) });
+    },
+    async hapusJadwal(row){
+      // DELETE langsung ke node post: /{post-id}
+      var url = 'https://graph.facebook.com/' + this.ver + '/' + encodeURIComponent(row.id) + '?access_token=' + encodeURIComponent(row._token);
+      const res = await fetch(url, { method: 'DELETE' });
+      const j = await res.json();
+      if(!res.ok || j.error) throw new Error((j.error && j.error.message) || ('FB ' + res.status));
+      return true;
+    }
   };
 
   function backendBelum(nama){
@@ -644,7 +694,7 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email }));
+    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url }));
     else sessionStorage.removeItem('ngt_session');
   }
 
@@ -712,70 +762,81 @@
     ai: {
       get: function(){
         if(CONFIG.dummy) return Promise.resolve(dummyLoad('ai_' + ngtPid(), DUMMY_DB.ai));
-        if(Supa.ok()) return Supa.req('ai_settings','GET',null,'?select=*&pelanggan_id=eq.'+ngtPid()).then(function(r){ return (r && r[0]) || null; }).catch(function(){ return backendBelum('supabase'); });
+        var s = ngtSession();
+        if(s && (s.model || s.apiKey)) return Promise.resolve({ model:s.model || '', apiKey:s.apiKey || '' });
+        if(Supa.ok()) return Supa.req('pelanggan','GET',null,'?select=model,apiKey&id=eq.'+ngtPid()).then(function(r){ return (r && r[0]) || null; }).catch(function(){ return backendBelum('supabase'); });
         return backendBelum('supabase');
       },
       simpan: function(d){
         if(CONFIG.dummy){ dummySave('ai_' + ngtPid(), d); return Promise.resolve(d); }
-        if(Supa.ok()) return Supa.insert('ai_settings', Object.assign({pelanggan_id: ngtPid()}, d)).catch(function(){ return backendBelum('supabase'); });
+        if(Supa.ok()) return Supa.update('pelanggan', ngtPid(), { model:d.model, apiKey:d.apiKey }).then(function(){
+          var s = ngtSession();
+          if(s){ s.model = d.model; s.apiKey = d.apiKey; sessionStorage.setItem('ngt_session', JSON.stringify(s)); }
+          return d;
+        }).catch(function(){ return backendBelum('supabase'); });
         return backendBelum('supabase');
       }
     },
     antrean: {
       list: function(){
         if(CONFIG.dummy) return dummyCRUD('antrean').list();
-        if(Supa.ok()) return Supa.req('antrean','GET',null,'?select=*&pelanggan_id=eq.'+ngtPid()).catch(function(){ return Sheet.ok() ? Sheet.list('Antrean') : backendBelum('supabase'); });
-        return backendBelum('supabase');
+        // Produksi: baca scheduled posts langsung dari Facebook
+        return DB.halaman.list().then(function(hl){
+          var valid = (hl || []).filter(function(h){ return h.pageId && h.token; });
+          if(!valid.length){ ngtToast('Hubungkan <b>halaman Facebook</b> di menu Setting dulu'); return []; }
+          return FB.scheduledPosts(valid);
+        }).catch(function(){ return []; });
       },
       tambah: function(a){
         if(CONFIG.dummy) return dummyCRUD('antrean').tambah(a);
-        if(Supa.ok()) return Supa.insert('antrean', Object.assign({pelanggan_id: ngtPid()}, a)).catch(function(){ return Sheet.ok() ? Sheet.append('Antrean', a) : backendBelum('supabase'); });
-        return backendBelum('supabase');
+        // Produksi: jadwalkan via Facebook API -> masuk scheduled posts
+        return DB.halaman.list().then(function(hl){
+          var h = (hl || []).find(function(x){ return x.nama === a.halaman; }) || (hl || [])[0];
+          if(!h || !h.token){ ngtToast('Pilih halaman yang <b>sudah terhubung</b> di Setting'); return null; }
+          var dt = prompt('Jadwal publish ke ' + h.nama + ' (format: 2026-10-05 18:00 WIB)', '');
+          if(!dt) return null;
+          return FB.schedulePost(h, (a.judul || '') + (a.caption ? '\n\n' + a.caption : ''), dt.trim())
+            .then(function(){ ngtToast('Terjadwal di <b>' + esc(h.nama) + '</b>'); return true; })
+            .catch(function(e){ ngtToast('Gagal menjadwalkan: ' + esc(e.message)); return null; });
+        });
       },
       hapus: function(id){
         if(CONFIG.dummy) return dummyCRUD('antrean').hapus(id);
-        if(Supa.ok()) return Supa.remove('antrean', id).catch(function(){ return backendBelum('supabase'); });
-        return backendBelum('supabase');
+        var row = (FB._cache || []).find(function(x){ return x.id === id; });
+        if(!row || !row._token){ ngtToast('Data jadwal tidak ditemukan'); return Promise.resolve(false); }
+        if(!confirm('Batalkan jadwal ini di Facebook?')) return Promise.resolve(false);
+        return FB.hapusJadwal(row)
+          .then(function(){ ngtToast('Jadwal <b>dibatalkan</b>'); return true; })
+          .catch(function(e){ ngtToast('Gagal: ' + esc(e.message)); return false; });
       }
     },
     draft: {
-      list: function(){
-        if(CONFIG.dummy) return dummyCRUD('draft').list();
-        if(Supa.ok()) return Supa.list('draft').catch(function(){ return backendBelum('supabase'); });
-        return backendBelum('supabase');
-      },
-      tambah: function(d){
-        if(CONFIG.dummy) return dummyCRUD('draft').tambah(d);
-        if(Supa.ok()) return Supa.insert('draft', d).catch(function(){ return backendBelum('supabase'); });
-        return backendBelum('supabase');
-      },
-      hapus: function(id){
-        if(CONFIG.dummy) return dummyCRUD('draft').hapus(id);
-        if(Supa.ok()) return Supa.remove('draft', id).catch(function(){ return backendBelum('supabase'); });
-        return backendBelum('supabase');
-      }
+      // Draft SELALU di localStorage browser (tidak ke backend, biar Supabase tidak bengkak)
+      list: function(){ return dummyCRUD('draft').list(); },
+      tambah: function(d){ return dummyCRUD('draft').tambah(d); },
+      hapus: function(id){ return dummyCRUD('draft').hapus(id); }
     },
     komentar: {
       list: function(){
         if(CONFIG.dummy) return dummyCRUD('komentar').list();
-        if(Fb.ok()) return Fb.list('komentar/' + ngtPid()).catch(function(){ return Sheet.ok() ? Sheet.list('Komentar') : backendBelum('firebase'); });
-        return backendBelum('firebase');
+        if(Sheet.ok()) return Sheet.komentarList().catch(function(){ return backendBelum('spreadsheet'); });
+        return backendBelum('spreadsheet');
       },
       update: function(id, patch){
         if(CONFIG.dummy) return dummyCRUD('komentar').update(id, patch);
-        if(Fb.ok()) return Fb.req('komentar/' + ngtPid() + '/' + id, 'PATCH', patch).catch(function(){ return backendBelum('firebase'); });
-        return backendBelum('firebase');
+        if(Sheet.ok()) return Sheet.komentarUpdate(id, patch).catch(function(){ return backendBelum('spreadsheet'); });
+        return backendBelum('spreadsheet');
       },
       tambah: function(k){
         if(CONFIG.dummy) return dummyCRUD('komentar').tambah(k);
-        if(Fb.ok()) return Fb.push('komentar/' + ngtPid(), k).catch(function(){ return backendBelum('firebase'); });
-        return backendBelum('firebase');
+        // Produksi: komentar masuk via webhook Facebook -> Web App -> spreadsheet pelanggan.
+        return Promise.resolve(k);
       }
     },
     arsip: {
       tulis: function(row){
         if(CONFIG.dummy) return Promise.resolve(true);
-        if(Sheet.ok()) return Sheet.append('Arsip', row).catch(function(){ return null; });
+        if(Sheet.ok()) return Sheet.arsip(Object.assign({ pelanggan_id: ngtPid() }, row));
         return Promise.resolve(null);
       }
     }
@@ -1164,9 +1225,24 @@
   function kmAvatar(nama){ return esc((nama||'?').trim().charAt(0).toUpperCase()); }
   async function kmLoad(){
     kmState.list = (await DB.komentar.list()) || [];
+    // Produksi: status auto-reply diambil dari Config spreadsheet pelanggan
+    if(!CONFIG.dummy && Sheet.ok()){
+      try {
+        var cfg = await Sheet.configGet();
+        var tgl = document.getElementById('kmAutoReply');
+        if(tgl && cfg.auto_reply !== undefined) tgl.checked = (String(cfg.auto_reply) === '1');
+      } catch(e){}
+    }
     kmRenderTabs();
     kmRender();
   }
+  // Toggle auto-reply -> simpan ke Config (produksi) / lokal (dummy)
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id === 'kmAutoReply' && !CONFIG.dummy && Sheet.ok()){
+      Sheet.configSet('auto_reply', e.target.checked ? '1' : '0').catch(function(){});
+      ngtToast('Auto-reply <b>' + (e.target.checked ? 'ON' : 'OFF') + '</b>');
+    }
+  });
   function kmRenderTabs(){
     var pages = ['semua'].concat(kmState.list.map(function(k){ return k.halaman; }).filter(function(v,i,a){ return v && a.indexOf(v)===i; }));
     document.getElementById('kmTabs').innerHTML = pages.map(function(p){
@@ -1243,12 +1319,20 @@
     kmRender();
     ngtToast(n ? ('<b>'+n+'</b> balasan terkirim (simulasi)') : 'Tidak ada yang perlu dikirim');
   };
-  // Auto-polling: simulasi komentar baru masuk berkala (produksi: fetch dari Facebook via backend)
+  // Auto-polling: produksi = cek komentar baru dari Web App tiap 60 detik;
+  // dummy = simulasi komentar baru tiap 20 detik
   window.kmPolling = function(){
     kmState.polling = !kmState.polling;
     var btn = document.getElementById('kmPollBtn');
     btn.innerHTML = kmState.polling ? '&#128260; Auto-Polling: ON' : '&#128260; Auto-Polling: OFF';
     if(kmState.polling){
+      if(!CONFIG.dummy){
+        kmState.timer = setInterval(function(){
+          kmLoad().then(function(){ ngtToast('Komentar <b>diperbarui</b>'); });
+        }, 60000);
+        ngtToast('<b>Auto-polling ON</b> — cek komentar baru tiap 60 detik');
+        return;
+      }
       var contoh = [
         { nama:'Rudi Hartono', pesan:'Min, info lokernya masih ada?' },
         { nama:'Nina Kurnia', pesan:'Setuju banget sama beritanya!' },
