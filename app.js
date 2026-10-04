@@ -529,11 +529,11 @@
      CARA AKTIFKAN: isi BACKEND_CONFIG di bawah, lalu set
      CONFIG.dummy = false.
   ============================================================ */
-  const CONFIG = { dummy: true };
+  const CONFIG = { dummy: false };
 
   const BACKEND_CONFIG = {
-    supabase:    { url: '', anonKey: '' },   // cth: https://xyz.supabase.co
-    spreadsheet: { webAppUrl: '' }           // URL Web App UTAMA (dipakai bila baris pelanggan tak punya webapp_url)
+    supabase:    { url: 'https://ppenobzyzbkmdaiojygn.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZW5vYnp5emJrbWRhaW9qeWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTEwNjIsImV4cCI6MjEwNjY4NzA2Mn0.4HrDB0w9i4m3ScN9-Yz7p-gqsePuS9djgz_0Oi5GAY0' },
+    spreadsheet: { webAppUrl: 'https://script.google.com/macros/s/AKfycbznky3kLVeMqD-gOQ2WhJZd_6ST32DHzMQq73QuB7coTljyMpXHhcT5cSAFpn5uqyLSPg/exec' }
   };
 
   /* ============ DATA DUMMY (dipakai saat dummy:true) ============
