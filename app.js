@@ -280,21 +280,29 @@
               <input class="ngt-input" id="aiUrl" placeholder="https://contoh.com/berita/..." style="flex:1;">
               <button class="ngt-btn ghost" onclick="aiAmbilUrl()">Ambil</button>
             </div></div>
-          <div class="ngt-field"><label class="ngt-label">Tayangkan ke halaman</label>
-            <select class="ngt-select" id="aiHalaman"></select></div>
+          <div class="ngt-field"><label class="ngt-label">Nada tulisan</label>
+            <div class="ngt-jenis" id="aiTone">
+              <button class="active" data-t="viral" onclick="aiPilihTone('viral',this)">\U0001F525 Viral</button><button data-t="marah" onclick="aiPilihTone('marah',this)">\U0001F621 Geram</button><button data-t="sedih" onclick="aiPilihTone('sedih',this)">\U0001F494 Haru</button><button data-t="kagum" onclick="aiPilihTone('kagum',this)">\U0001F632 Kagum</button><button data-t="lucu" onclick="aiPilihTone('lucu',this)">\U0001F602 Satir</button><button data-t="bangga" onclick="aiPilihTone('bangga',this)">\U0001F1EE\U0001F1E9 Bangga</button>
+            </div>
+            <p class="ngt-muted" style="margin:6px 0 0">Generate otomatis mengikuti <b>semua halamanmu</b> di Setting — tiap halaman dapat 3 opsi.</p></div>
           <div class="ngt-wiznav"><button class="ngt-btn" onclick="aiKeStep(2)" style="flex:1;">Lanjut ke Kurasi &rarr;</button></div>
         </div>
 
         <!-- LANGKAH 2: KURASI -->
         <div id="aiStep2" class="ngt-card" style="max-width:640px;margin:0 auto;display:none;">
           <h3>&#10024; Kurasi AI</h3>
-          <p class="ngt-muted" style="margin-top:-8px;">AI menulis ulang berita jadi konten siap posting: judul, caption, hashtag &amp; komentar pancingan.</p>
+          <p class="ngt-muted" style="margin-top:-8px;">AI menulis untuk <b>tiap halamanmu</b> — 3 opsi judul, deskripsi &amp; hook per halaman.</p>
           <button class="ngt-btn" id="aiGenBtn" onclick="aiGenerate()">&#10024; Generate dengan AI</button>
           <div id="aiHasil" style="display:none;margin-top:18px;">
+            <div class="ngt-field"><label class="ngt-label">Halaman</label><div class="ngt-tabs" id="aiSetTabs"></div></div>
             <div class="ngt-field"><label class="ngt-label">Pilih judul (klik salah satu)</label><div id="aiJudulOpts"></div></div>
-            <div class="ngt-field"><label class="ngt-label">Ringkasan</label><div class="ngt-out" id="aiRingkasan"></div></div>
+            <div class="ngt-field"><label class="ngt-label">Pilih deskripsi</label><div id="aiDescOpts"></div></div>
+            <div class="ngt-field"><label class="ngt-label">Pilih hook caption</label><div id="aiHookOpts"></div></div>
             <div class="ngt-field"><label class="ngt-label">Caption (bisa diedit)</label>
               <textarea class="ngt-area" id="aiCaption" style="min-height:110px;"></textarea></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin:-4px 0 12px;">
+              <button class="ngt-btn ghost" id="aiCapBtn" onclick="aiBuatCaption()">&#10024; Buatkan Caption + Pancingan</button>
+            </div>
             <div class="ngt-field"><label class="ngt-label">Komentar pancingan (bisa diedit, satu per baris)</label>
               <textarea class="ngt-area" id="aiPancingan" style="min-height:96px;"></textarea></div>
           </div>
@@ -306,6 +314,9 @@
 
         <!-- LANGKAH 3: VISUAL -->
         <div id="aiStep3" style="display:none;">
+          <div class="ngt-card" style="max-width:640px;margin:0 auto 14px;">
+            <div class="ngt-field" style="margin:0"><label class="ngt-label">Halaman</label><div class="ngt-tabs" id="aiSetTabs3"></div></div>
+          </div>
           <div class="ngt-studio">
             <div class="ngt-card">
               <h3>&#127912; Kartu Visual</h3>
@@ -462,8 +473,7 @@
         <div class="ngt-card" style="margin-bottom:14px">
           <h3>🤖 Pengaturan API Key AI</h3>
           <div class="ngt-field"><label class="ngt-label">Model AI</label><select class="ngt-select" id="ngtAiModel">
-            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+            <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
             <option value="gpt-4o-mini">GPT-4o Mini</option>
             <option value="gpt-4o">GPT-4o</option>
           </select></div>
@@ -647,7 +657,7 @@
       { id:'h3', pid:'cust1', nama:'Arsip Peristiwa', pageId:'101234567890333', token:'EAABdummytokenArsipPeristiwa', webhook:'newsgen_ap', aktif:true },
       { id:'h4', pid:'cust1', nama:'Berita Cilacap',  pageId:'101234567890444', token:'EAABdummytokenBeritaCilacap',  webhook:'newsgen_bc', aktif:true }
     ],
-    ai: { model:'gemini-2.5-flash', apiKey:'' },
+    ai: { model:'gemini-3.8-flash', apiKey:'' },
     _catatan: 'ai disimpan per-pelanggan via key ai_<pid>',
     antrean: [
       { id:'a1', pid:'cust1', judul:'Harga Cabai Rawit di Pasar Induk Naik 40%', halaman:'Folk Jateng', jadwal:'Hari ini 18:00', tipe:'AI News' },
@@ -1244,7 +1254,7 @@
     }
     var ai = await DB.ai.get();
     if(ai){
-      document.getElementById('ngtAiModel').value = ai.model || 'gemini-2.5-flash';
+      document.getElementById('ngtAiModel').value = ai.model || 'gemini-3.8-flash';
       document.getElementById('ngtAiKey').value = ai.apiKey || '';
       if(ai.apiKey) document.getElementById('ngtAiStatus').innerHTML = 'API key tersimpan &#10003;';
     }
@@ -1461,14 +1471,89 @@
   };
 
   // ============ WIZARD AI NEWS (3 langkah ala contoh) ============
-  var aiW = { step:1, judulOpts:[], judul:'', ringkasan:'', caption:'', pancingan:[] };
+  var aiW = { step:1, sets:[], activeSet:0, tone:'viral' };
+  // Kompatibilitas: properti lama dibaca dari set aktif
+  function aiSetAktif(){ return aiW.sets[aiW.activeSet] || null; }
+
+  var AI_TONES = [
+    { key:'viral', label:'\U0001F525 Viral', desc:'Wajib share' },
+    { key:'marah', label:'\U0001F621 Geram', desc:'Pancing emosi' },
+    { key:'sedih', label:'\U0001F494 Haru', desc:'Sentuh hati' },
+    { key:'kagum', label:'\U0001F632 Kagum', desc:'Bikin terpana' },
+    { key:'lucu', label:'\U0001F602 Satir', desc:'Humor nyindir' },
+    { key:'bangga', label:'\U0001F1EE\U0001F1E9 Bangga', desc:'Nasionalisme' }
+  ];
+
+  // Panggil Gemini langsung dari browser (pakai API key pelanggan di Setting)
+  async function aiGeminiKey(){
+    var ai = await DB.ai.get();
+    if(!ai || !ai.apiKey) throw new Error('Isi dulu API Key AI di Setting');
+    var model = ai.model || 'gemini-3.8-flash';
+    if(model.indexOf('gpt') === 0) throw new Error('Generate multi-halaman memakai Gemini — ganti Model AI ke Gemini di Setting');
+    // Gemini 2.5 sudah dipensiunkan Google (Okt 2026) -> pakai 3.8 Flash yang terbukti jalan
+    return { key:ai.apiKey, model:'gemini-3.8-flash' };
+  }
+  async function aiGemini(prompt, requireJson){
+    var k = await aiGeminiKey();
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + k.model + ':generateContent?key=' + encodeURIComponent(k.key);
+    var body = { contents:[{ parts:[{ text:prompt }] }],
+      safetySettings:[
+        { category:'HARM_CATEGORY_HARASSMENT', threshold:'BLOCK_NONE' },
+        { category:'HARM_CATEGORY_HATE_SPEECH', threshold:'BLOCK_NONE' },
+        { category:'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold:'BLOCK_NONE' },
+        { category:'HARM_CATEGORY_DANGEROUS_CONTENT', threshold:'BLOCK_NONE' }
+      ] };
+    if(requireJson) body.generationConfig = { responseMimeType:'application/json' };
+    var attempt = 0, lastErr = null;
+    while(attempt < 3){
+      try {
+        const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+        const j = await res.json().catch(function(){ return {}; });
+        if(!res.ok) throw new Error((j.error && j.error.message) || ('Gemini HTTP ' + res.status));
+        if(j.promptFeedback && j.promptFeedback.blockReason) throw new Error('Prompt diblokir Gemini: ' + j.promptFeedback.blockReason);
+        var t = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text;
+        if(!t) throw new Error('Respons AI kosong');
+        return t;
+      } catch(e){ lastErr = e; attempt++; await new Promise(function(r){ setTimeout(r, attempt * 1500); }); }
+    }
+    throw lastErr;
+  }
+
+  // Sensor kata sensitif: samarkan 1 vokal pertama tiap kata
+  function censorSensitiveWords(text){
+    if(!text) return text;
+    var words = ['bunuh diri','gantung diri','pembunuhan','dibunuh','membunuh','diperkosa','memperkosa','pemerkosaan','pelecehan','narkoba','sabu','ganja','darah','berdarah','mutilasi','bunuh','mayat','jenazah','disiksa','menyiksa','penyiksaan','pencabulan','dicabul','cabul','miras','mabuk','alkohol','senjata tajam','sajam','bacok','dibacok','membacok','tusuk','ditusuk','menusuk','tembak','ditembak','menembak','tewas','meninggal'];
+    words.sort(function(a,b){ return b.length - a.length; });
+    var out = text;
+    words.forEach(function(w){
+      out = out.replace(new RegExp(w, 'gi'), function(m){
+        return m.split(' ').map(function(x){ return x.replace(/[aiueo]/i, '*'); }).join(' ');
+      });
+    });
+    return out;
+  }
+
+  // Parse JSON AI yang bandel (markdown block / trailing comma)
+  function safeParseJSON(text){
+    var cleaned = String(text || '').trim().replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '');
+    cleaned = cleaned.replace(/,\s*([}\]])/g, '$1').replace(/([{[,])\s*,/g, '$1');
+    try { return JSON.parse(cleaned); } catch(e){}
+    var fb = cleaned.indexOf('{');
+    if(fb !== -1){ var lb = cleaned.lastIndexOf('}'); while(lb > fb){ try { return JSON.parse(cleaned.substring(fb, lb + 1)); } catch(e){ lb = cleaned.lastIndexOf('}', lb - 1); } } }
+    var ab = cleaned.indexOf('[');
+    if(ab !== -1){ var rb = cleaned.lastIndexOf(']'); while(rb > ab){ try { return JSON.parse(cleaned.substring(ab, rb + 1)); } catch(e){ rb = cleaned.lastIndexOf(']', rb - 1); } } }
+    throw new Error('Gagal membaca JSON dari AI');
+  }
   window.aiKeStep = function(n){
     if(n === 2 && !document.getElementById('aiSumber').value.trim()){
       ngtToast('Tempel dulu <b>teks beritanya</b>'); return;
     }
-    if(n === 3 && !aiW.judul){
+    if(aiW.step === 2 && n !== 2) aiSimpanSetAktif();
+    var sNow = aiSetAktif();
+    if(n === 3 && (!sNow || !sNow.headline)){
       ngtToast('Generate dulu & <b>pilih judul</b> di langkah Kurasi'); return;
     }
+    if(n === 3){ aiRenderSets(); aiRenderPreview(); }
     aiW.step = n;
     [1,2,3].forEach(function(i){
       document.getElementById('aiStep'+i).style.display = (i===n) ? '' : 'none';
@@ -1477,7 +1562,6 @@
       st.classList.toggle('done', i<n);
       st.querySelector('.dot').innerHTML = (i<n) ? '&#10003;' : i;
     });
-    if(n === 3) aiRenderPreview();
     window.scrollTo({top:0, behavior:'smooth'});
   };
   window.aiAmbilUrl = function(){
@@ -1491,68 +1575,117 @@
       ngtToast('Berita <b>berhasil</b> diambil (simulasi)');
     }, 1200);
   };
-  // Simulasi AI: olah teks jadi judul/caption/pancingan (produksi: panggil API via backend)
-  function aiSimulasi(teks){
-    var kalimat = teks.split(/[\n\.]+/).map(function(s){ return s.trim(); }).filter(Boolean);
-    var inti = (kalimat[0] || teks).slice(0, 110);
-    var kata = teks.replace(/[^a-zA-Z\s]/g,'').split(/\s+/).filter(function(w){ return w.length > 4; });
-    var topik = (kata[0] || 'info').toLowerCase();
-    var judulOpts = [
-      '🔥 ' + inti,
-      'VIRAL: ' + inti,
-      'BREAKING: ' + inti,
-      'Fakta Terbaru: ' + inti,
-      'Jangan Kaget! ' + inti
-    ];
-    var ringkasan = kalimat.slice(0,3).join('. ') + (kalimat.length > 3 ? '.' : '');
-    var halaman = document.getElementById('aiHalaman').value || '';
-    var caption = '🔥 ' + inti + '\n\n' + ringkasan +
-      '\n\nGimana menurut kalian? Tulis pendapatmu di kolom komentar 👇\nJangan lupa LIKE & SHARE biar makin viral!' +
-      '\n\n#berita #' + topik.replace(/\s+/g,'') + ' #viral #' + halaman.replace(/\s+/g,'');
-    var pancingan = [
-      'Setuju banget min, di tempatku juga gitu!',
-      'Wah baru tahu, makasih infonya 🙏',
-      'Tag temenmu yang perlu tahu ini 👇',
-      'Menurut kalian gimana? Setuju atau enggak?'
-    ];
-    return { judulOpts:judulOpts, ringkasan:ringkasan, caption:caption, pancingan:pancingan };
+  window.aiPilihTone = function(t, btn){
+    aiW.tone = t;
+    document.querySelectorAll('#aiTone button').forEach(function(b){ b.classList.toggle('active', b === btn); });
+  };
+  // Simpan isi textarea ke set aktif (dipanggil sebelum ganti tab / pindah langkah)
+  function aiSimpanSetAktif(){
+    var s = aiSetAktif(); if(!s) return;
+    s.caption = document.getElementById('aiCaption').value;
+    var baris = document.getElementById('aiPancingan').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+    s.firstComments = { marah:baris[0]||'', nanya:baris[1]||'', setuju:baris[2]||'', julid:baris[3]||'' };
   }
-  window.aiGenerate = function(){
+  window.aiGenerate = async function(){
     var teks = document.getElementById('aiSumber').value.trim();
     if(!teks){ ngtToast('Tempel dulu <b>teks beritanya</b>'); return; }
+    var pages = (await DB.halaman.list() || []).filter(function(h){ return h && h.nama; });
+    if(!pages.length){ ngtToast('Tambah dulu <b>halaman</b> di Setting'); return; }
     var btn = document.getElementById('aiGenBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="ngt-spin"></span> AI sedang menulis&hellip;';
-    setTimeout(function(){
-      var h = aiSimulasi(teks);
-      aiW.judulOpts = h.judulOpts; aiW.judul = h.judulOpts[0];
-      aiW.ringkasan = h.ringkasan; aiW.caption = h.caption; aiW.pancingan = h.pancingan;
+    btn.innerHTML = '<span class="ngt-spin"></span> AI menulis untuk ' + pages.length + ' halaman&hellip;';
+    try {
+      await aiGeminiKey(); // validasi kunci dulu (pesan error jelas)
+      var toneMap = { viral:'VIRAL — soroti fakta paling mengejutkan/penting', marah:'GERAM — soroti fakta paling tidak adil/mengecewakan', sedih:'HARU — soroti fakta paling menyentuh', kagum:'KAGUM — soroti fakta paling tidak terduga', lucu:'SATIR — soroti ironi paling menggelikan', bangga:'BANGGA — soroti fakta paling membanggakan/inspiratif' };
+      var daftarHal = pages.map(function(h){ return '- ' + h.nama; }).join('\n');
+      var prompt = 'Kamu adalah admin akun gosip/media sosial viral nomor 1 di Indonesia. Keahlianmu: mengubah berita kaku menjadi konten yang relatable dan memicu rasa penasaran netizen — TETAP BERDASARKAN FAKTA, tanpa hoax.\n\nTEKS BERITA:\n"""\n' + teks.substring(0, 12000) + '\n"""\n\nNADA: ' + (toneMap[aiW.tone] || toneMap.viral) + '\n\nTUGAS: Buat konten untuk ' + pages.length + ' halaman berikut. Tiap halaman pakai ANGLE BERBEDA, jangan mengulang kalimat yang sama:\n' + daftarHal + '\n\nPer halaman buat:\n- 3 JUDUL (panjang & punchy, 10-15 kata, Title Case = huruf depan tiap kata kapital, gaya nge-gibah bareng teman, variasikan struktur kalimat)\n- 3 DESKRIPSI (informatif tapi asik dibaca, 15-25 kata, sertakan fakta krusial)\n- 3 HOOK caption (1-2 kalimat pemancing interaksi, unik & spesifik untuk berita ini, JANGAN template berulang)\n\nATURAN KETAT:\n- Fakta 100% akurat. DILARANG menambah klaim, angka, atau hoax.\n- Bahasa gaul umum/nasional (cuy, bro, parah, kocak). DILARANG bahasa Jawa/dialek daerah.\n- DILARANG kata terkait judi (slot, depo, judi, judol, gacor) — pakai sensor (sl0t, judi onlen).\n- Gaya admin sosmed asli, BUKAN reporter TV kaku.\n\nOutput HANYA JSON valid:\n{ "sets": [ { "halaman": "Nama Halaman", "headlines": ["j1","j2","j3"], "descriptions": ["d1","d2","d3"], "hooks": ["h1","h2","h3"] } ] }';
+      var txt = await aiGemini(prompt, true);
+      var parsed = safeParseJSON(txt);
+      var arr = parsed.sets || [];
+      var fx = function(a){ return (a || []).filter(function(x){ return typeof x === 'string' && x.trim(); }).map(censorSensitiveWords).slice(0, 3); };
+      aiW.sets = pages.map(function(h, i){
+        var s = arr.find(function(x){ return x && x.halaman && String(x.halaman).toLowerCase() === String(h.nama).toLowerCase(); }) || arr[i] || {};
+        var headlines = fx(s.headlines), descs = fx(s.descriptions), hooks = fx(s.hooks);
+        return { nama:h.nama, pageId:h.pageId || '', headlines:headlines, descs:descs, hooks:hooks,
+          headline:headlines[0] || '', desc:descs[0] || '', hook:hooks[0] || '',
+          caption:'', firstComments:{ marah:'', nanya:'', setuju:'', julid:'' } };
+      });
+      aiW.activeSet = 0;
       document.getElementById('aiHasil').style.display = '';
-      document.getElementById('aiRingkasan').textContent = h.ringkasan;
-      document.getElementById('aiCaption').value = h.caption;
-      document.getElementById('aiPancingan').value = h.pancingan.join('\n');
-      aiRenderJudulOpts();
-      btn.disabled = false;
-      btn.innerHTML = '&#10024; Generate dengan AI';
-      ngtToast('Kurasi <b>selesai!</b> Pilih judul favoritmu');
-    }, 1600);
+      aiRenderSets();
+      ngtToast('Siap untuk <b>' + aiW.sets.length + '</b> halaman — pilih per halaman');
+    } catch(e){
+      ngtToast('Gagal generate: ' + esc(e.message));
+    }
+    btn.disabled = false;
+    btn.innerHTML = '&#10024; Generate dengan AI';
   };
-  function aiRenderJudulOpts(){
-    document.getElementById('aiJudulOpts').innerHTML = aiW.judulOpts.map(function(j, i){
-      return '<div class="ngt-opt' + (j===aiW.judul ? ' sel' : '') + '" onclick="aiPilihJudul(' + i + ')">' + esc(j) + '</div>';
+  function aiRenderSets(){
+    var tabs = document.getElementById('aiSetTabs');
+    if(tabs) tabs.innerHTML = aiW.sets.map(function(s, i){
+      return '<button class="' + (i === aiW.activeSet ? 'active' : '') + '" onclick="aiPilihSet(' + i + ')">' + esc(s.nama) + '</button>';
+    }).join('');
+    var tabs3 = document.getElementById('aiSetTabs3');
+    if(tabs3) tabs3.innerHTML = aiW.sets.map(function(s, i){
+      return '<button class="' + (i === aiW.activeSet ? 'active' : '') + '" onclick="aiPilihSet3(' + i + ')">' + esc(s.nama) + '</button>';
+    }).join('');
+    aiRenderSetAktif();
+  }
+  window.aiPilihSet = function(i){ aiSimpanSetAktif(); aiW.activeSet = i; aiRenderSets(); };
+  window.aiPilihSet3 = function(i){ aiW.activeSet = i; aiRenderSets(); aiRenderPreview(); };
+  function aiOptsHtml(list, terpilih, fn){
+    if(!list.length) return '<p class="ngt-muted">Tidak ada opsi.</p>';
+    return list.map(function(t, i){
+      return '<div class="ngt-opt' + (t === terpilih ? ' sel' : '') + '" onclick="' + fn + '(' + i + ')">' + esc(t) + '</div>';
     }).join('');
   }
-  window.aiPilihJudul = function(i){
-    aiW.judul = aiW.judulOpts[i];
-    aiRenderJudulOpts();
-  };
-  function aiRenderPreview(){
-    document.getElementById('aiPreview').innerHTML =
-      '<div class="kicker">NEWSGEN STUDIO</div><h4>' + esc(aiW.judul) + '</h4>' +
-      '<div class="src">' + esc(document.getElementById('aiHalaman').value || '') + ' &bull; ' + hariIni() + '</div>';
+  function aiRenderSetAktif(){
+    var s = aiSetAktif(); if(!s) return;
+    document.getElementById('aiJudulOpts').innerHTML = aiOptsHtml(s.headlines, s.headline, 'aiPilihJudulSet');
+    document.getElementById('aiDescOpts').innerHTML = aiOptsHtml(s.descs, s.desc, 'aiPilihDescSet');
+    document.getElementById('aiHookOpts').innerHTML = aiOptsHtml(s.hooks, s.hook, 'aiPilihHookSet');
+    document.getElementById('aiCaption').value = s.caption || '';
+    document.getElementById('aiPancingan').value = [s.firstComments.marah, s.firstComments.nanya, s.firstComments.setuju, s.firstComments.julid].filter(Boolean).join('\n');
   }
-  // Download PNG 1080x1350 via canvas
+  window.aiPilihJudulSet = function(i){ var s = aiSetAktif(); if(s){ s.headline = s.headlines[i]; aiW.judul = s.headline; aiRenderSetAktif(); } };
+  window.aiPilihDescSet = function(i){ var s = aiSetAktif(); if(s){ s.desc = s.descs[i]; aiRenderSetAktif(); } };
+  window.aiPilihHookSet = function(i){ var s = aiSetAktif(); if(s){ s.hook = s.hooks[i]; aiRenderSetAktif(); } };
+  function aiRenderPreview(){
+    var s = aiSetAktif();
+    document.getElementById('aiPreview').innerHTML =
+      '<div class="kicker">NEWSGEN STUDIO</div><h4>' + esc((s && s.headline) || '') + '</h4>' +
+      '<div class="src">' + esc((s && s.nama) || '') + ' &bull; ' + hariIni() + '</div>';
+  }
+  // Caption + 4 pancingan per halaman (1 panggilan untuk semua)
+  window.aiBuatCaption = async function(){
+    if(!aiW.sets.length){ ngtToast('Generate dulu di atas'); return; }
+    aiSimpanSetAktif();
+    var teks = document.getElementById('aiSumber').value.trim();
+    var btn = document.getElementById('aiCapBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="ngt-spin"></span> Menulis caption&hellip;';
+    try {
+      var daftar = aiW.sets.map(function(s, i){
+        return (i + 1) + '. HALAMAN: ' + s.nama + '\nJUDUL: ' + s.headline + '\nDESKRIPSI: ' + s.desc + '\nHOOK: ' + s.hook;
+      }).join('\n\n');
+      var prompt = 'Kamu jurnalis digital Indonesia yang menulis untuk Facebook.\n\nBuat caption untuk SETIAP halaman berikut:\n\n' + daftar + '\n\nISI BERITA ASLI:\n"""\n' + teks.substring(0, 12000) + '\n"""\n\nPer halaman buat:\n- caption: gaya straight news 100% jurnalistik, lugas & netral, 3-4 paragraf (pisahkan dengan baris kosong), paragraf pertama mengandung kata kunci utama, TANPA asterisk/markdown, TANPA label/prefix, 3-5 hashtag (MAKS 5), akhiri dengan ajakan diskusi di komentar.\n- firstComments: 4 komentar dari sudut pandang ADMIN halaman (bukan netizen): marah (kritis ke sistem, bukan toxic), nanya (diskusi terbuka), setuju (empati ke warga), julid (satir cerdas, bukan menyerang personal). MAKSIMAL 12 kata per komentar, TANPA emoji.\n\nDILARANG: hoax, bahasa Jawa/dialek daerah, kata judi (pakai sensor: sl0t, judi onlen).\n\nOutput HANYA JSON valid:\n{ "captions": [ { "halaman": "Nama", "caption": "...", "firstComments": { "marah": "...", "nanya": "...", "setuju": "...", "julid": "..." } } ] }';
+      var txt = await aiGemini(prompt, true);
+      var parsed = safeParseJSON(txt);
+      (parsed.captions || []).forEach(function(c){
+        var set = aiW.sets.find(function(x){ return x.nama.toLowerCase() === String(c.halaman || '').toLowerCase(); });
+        if(!set) return;
+        set.caption = censorSensitiveWords(c.caption || '');
+        var fc = c.firstComments || {};
+        set.firstComments = { marah:censorSensitiveWords(fc.marah || ''), nanya:censorSensitiveWords(fc.nanya || ''), setuju:censorSensitiveWords(fc.setuju || ''), julid:censorSensitiveWords(fc.julid || '') };
+      });
+      aiRenderSetAktif();
+      ngtToast('Caption + pancingan <b>siap</b> untuk semua halaman');
+    } catch(e){ ngtToast('Gagal: ' + esc(e.message)); }
+    btn.disabled = false; btn.innerHTML = '&#10024; Buatkan Caption + Pancingan';
+  };
+
+  // Download PNG 1080x1350 via canvas (pakai judul & nama halaman dari tab aktif)
   function aiBuatKartuCanvas(){
+    var sCard = aiSetAktif();
     var c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
     var x = c.getContext('2d');
     var g = x.createLinearGradient(0,0,1080,1350);
@@ -1561,14 +1694,14 @@
     x.fillStyle = '#fbbf24'; x.font = '800 34px sans-serif';
     x.fillText('N E W S G E N   S T U D I O', 70, 90);
     x.fillStyle = '#fff'; x.font = '900 64px sans-serif';
-    var kata = aiW.judul.split(' '), baris = '', y = 220;
+    var kata = ((sCard && sCard.headline) || aiW.judul || '').split(' '), baris = '', y = 220;
     kata.forEach(function(k){
       if((baris + ' ' + k).length > 26){ x.fillText(baris, 70, y); y += 84; baris = k; }
       else baris = (baris ? baris + ' ' : '') + k;
     });
     x.fillText(baris, 70, y);
     x.fillStyle = '#a1a1aa'; x.font = '400 30px sans-serif';
-    x.fillText((document.getElementById('aiHalaman').value || '') + '  •  ' + hariIni(), 70, 1250);
+    x.fillText(((sCard && sCard.nama) || '') + '  \u2022  ' + hariIni(), 70, 1250);
     return c;
   }
   window.aiKartuBlob = function(){
@@ -1577,7 +1710,8 @@
     });
   };
   window.aiDownload = function(){
-    if(!aiW.judul){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
+    var sD = aiSetAktif();
+    if(!sD || !sD.headline){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
     var a = document.createElement('a');
     a.download = 'newsgen-kartu.png';
     a.href = aiBuatKartuCanvas().toDataURL('image/png');
@@ -1585,16 +1719,19 @@
     ngtToast('Kartu <b>terdownload</b> (1080&times;1350)');
   };
   function aiPayload(){
+    aiSimpanSetAktif();
+    var s = aiSetAktif() || {};
     return {
-      judul: aiW.judul,
-      halaman: document.getElementById('aiHalaman').value || '',
+      judul: s.headline || aiW.judul || '',
+      halaman: s.nama || '',
       caption: document.getElementById('aiCaption').value,
       pancingan: document.getElementById('aiPancingan').value,
       tipe: 'AI News'
     };
   }
   window.aiTerbit = async function(){
-    if(!aiW.judul){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
+    var sT = aiSetAktif();
+    if(!sT || !sT.headline){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
     var p = aiPayload();
     DB.arsip.tulis({ aksi:'terbit', judul:p.judul, halaman:p.halaman, waktu:new Date().toISOString() });
     var plats = ngtPlatTerpilih('ngtPlatAi');
