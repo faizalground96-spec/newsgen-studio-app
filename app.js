@@ -1331,25 +1331,26 @@
     var k = kmState.list.find(function(x){ return x.id===id; });
     if(!k) return;
     var ta = document.getElementById('kmBalas_' + id);
-    k.balasan = ta ? ta.value : (k.balasan || '');
-    k.status = 'terkirim';
-    DB.komentar.update(id, { balasan:k.balasan, status:'terkirim' });
+    var balasan = ta ? ta.value : (k.balasan || '');
+    DB.komentar.update(id, { balasan:balasan, status:'terkirim' }); // backend otomatis menghapus barisnya
+    kmState.list = kmState.list.filter(function(x){ return x.id !== id; });
     kmRender();
-    ngtToast('Balasan ke <b>' + esc(k.nama) + '</b> terkirim (simulasi)');
+    ngtToast('Balasan ke <b>' + esc(k.nama) + '</b> terkirim (simulasi) & dihapus dari daftar');
   };
   window.kmKirimSemua = function(){
-    var n = 0;
+    var n = 0, ids = [];
     kmState.list.forEach(function(k){
       if(k.status!=='terkirim'){
         var ta = document.getElementById('kmBalas_' + k.id);
-        k.balasan = ta ? ta.value : (k.balasan || kmAiReply(k.pesan));
-        k.status = 'terkirim';
-        DB.komentar.update(k.id, { balasan:k.balasan, status:'terkirim' });
+        var balasan = ta ? ta.value : (k.balasan || kmAiReply(k.pesan));
+        DB.komentar.update(k.id, { balasan:balasan, status:'terkirim' }); // backend otomatis menghapus barisnya
+        ids.push(k.id);
         n++;
       }
     });
+    kmState.list = kmState.list.filter(function(x){ return ids.indexOf(x.id) < 0; });
     kmRender();
-    ngtToast(n ? ('<b>'+n+'</b> balasan terkirim (simulasi)') : 'Tidak ada yang perlu dikirim');
+    ngtToast(n ? ('<b>'+n+'</b> balasan terkirim (simulasi) & dihapus dari daftar') : 'Tidak ada yang perlu dikirim');
   };
   // Auto-polling: produksi = cek komentar baru dari Web App tiap 60 detik;
   // dummy = simulasi komentar baru tiap 20 detik
