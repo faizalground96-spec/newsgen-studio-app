@@ -1,8 +1,9 @@
-/* NewsGen Studio — newsgen-app/admin.js (di-load via CDN) */
+/* NewsGen Studio — admin.js (di-load via CDN) */
 (function(){
   var root = document.getElementById('newsgen-admin-root');
   if(!root){ root = document.createElement('div'); root.id = 'newsgen-admin-root'; document.body.appendChild(root); }
   root.innerHTML = `
+
 <style>
   /* paksa full width (tema Notable) */
   body { background:#0a0a0d !important; }
@@ -17,9 +18,9 @@
     display:none !important;
   }
 </style>
-<style>/* FIX 2026-10-04: full-bleed dark canvas */html,body{background:#0a0a0d!important}.page,.all-container{max-width:none!important}</style>
+<style>/* FIX: full-bleed dark canvas */html,body{background:#0a0a0d!important}.page,.all-container{max-width:none!important}</style>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
   .nga { font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif; background:#0a0a0d; color:#e4e4e7; line-height:1.55; display:flex; min-height:100vh; font-size:15px; }
   .nga button { font-family:inherit; }
   /* ===== SIDEBAR ===== */
@@ -109,348 +110,564 @@
     .nga-topbar { padding:12px 14px; }
     .nga-topbar h1 { font-size:17px; }
   }
+
+  /* ===== TAMBAHAN: login, tabs, danger ===== */
+  .nga-loginwrap { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#0a0a0d; padding:20px; }
+  .nga-logincard { background:#131316; border:1px solid #27272a; border-radius:16px; padding:36px 32px; width:100%; max-width:380px; }
+  .nga-tabs { display:flex; gap:8px; margin:16px 0; flex-wrap:wrap; }
+  .nga-tabs button { padding:10px 18px; border-radius:10px; border:1px solid #27272a; background:#131316; color:#a1a1aa; cursor:pointer; font-size:14px; }
+  .nga-tabs button.active { background:rgba(139,92,246,.14); border-color:rgba(139,92,246,.45); color:#c4b5fd; font-weight:700; }
+  .nga-danger { background:rgba(239,68,68,.12) !important; border:1px solid rgba(239,68,68,.4) !important; color:#fca5a5 !important; }
+  .nga-backbtn { margin-bottom:12px; }
+  .nga-gridform { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:640px){ .nga-gridform { grid-template-columns:1fr; } }
 </style>
-<div class="nga">
+<div id="nga-login" class="nga-loginwrap" style="display:none">
+  <div class="nga-logincard">
+    <div class="nga-brand">NewsGen <span>Studio</span></div>
+    <div class="nga-adminbadge">ADMIN</div>
+    <h2 style="color:#fff;margin:14px 0 4px;font-size:20px">Masuk Admin</h2>
+    <p class="nga-muted" style="margin-bottom:20px">Kelola pelanggan & seluruh datanya.</p>
+    <div class="nga-field"><label class="nga-label">Email</label><input class="nga-input" id="ngaLoginEmail" type="email" placeholder="admin@newsgen.id" autocomplete="username"></div>
+    <div class="nga-field"><label class="nga-label">PIN</label><input class="nga-input" id="ngaLoginPin" type="password" inputmode="numeric" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
+    <div id="ngaLoginErr" style="display:none;color:#fca5a5;font-size:13px;margin-bottom:12px"></div>
+    <button class="nga-btn" style="width:100%;justify-content:center" onclick="ngaDoLogin()">Masuk</button>
+  </div>
+</div>
+<div class="nga" id="ngaApp" style="display:none">
   <div class="nga-overlay" id="ngaOverlay"></div>
-  <!-- SIDEBAR -->
   <aside class="nga-sidebar" id="ngaSidebar">
     <div class="nga-brand">NewsGen <span>Studio</span></div>
     <div class="nga-adminbadge">ADMIN</div>
     <nav class="nga-nav" id="ngaNav">
-      <button data-target="ringkasan" class="active"><span class="ico">📊</span> Ringkasan</button>
-      <button data-target="pelanggan"><span class="ico">👥</span> Pelanggan</button>
-      <button data-target="paket"><span class="ico">💳</span> Paket & Harga</button>
-      <button data-target="setting"><span class="ico">⚙️</span> Setting</button>
+      <button data-target="ringkasan" class="active"><span class="ico">&#128202;</span> Ringkasan</button>
+      <button data-target="pelanggan"><span class="ico">&#128101;</span> Pelanggan</button>
+      <button data-target="paket"><span class="ico">&#128179;</span> Paket & Harga</button>
+      <button data-target="setting"><span class="ico">&#9881;</span> Setting</button>
     </nav>
-    <div class="nga-side-foot">Faizal ground (Admin)</div>
+    <div class="nga-side-foot"><span id="ngaAdminName">Admin</span><br><a href="#" onclick="ngaLogout();return false;" style="color:#8b5cf6">Keluar</a></div>
   </aside>
-
-  <!-- MAIN -->
   <div class="nga-main">
     <header class="nga-topbar">
       <div style="display:flex;align-items:center;gap:12px;">
-        <button class="nga-burger" id="ngaBurger">☰</button>
-        <div>
-          <h1 id="ngaPageTitle">Ringkasan</h1>
-          <div class="sub">Kelola penjualan NewsGen Studio</div>
-        </div>
+        <button class="nga-burger" id="ngaBurger">&#9776;</button>
+        <div><h1 id="ngaPageTitle">Ringkasan</h1><div class="sub">Kelola penjualan NewsGen Studio</div></div>
       </div>
-      <button class="nga-btn small" onclick="ngaOpenModal()">＋ Tambah Pelanggan</button>
+      <button class="nga-btn small" onclick="pelangganTambah()">&#65291; Tambah Pelanggan</button>
     </header>
-
     <div class="nga-content">
-
-      <!-- RINGKASAN -->
       <section class="nga-page active" id="apage-ringkasan">
         <div class="nga-stats">
-          <div class="nga-card nga-stat"><div class="ico">👥</div><div class="num" id="ngaStatTotal">37</div><div class="lbl">Total pelanggan</div></div>
-          <div class="nga-card nga-stat"><div class="ico">✅</div><div class="num" id="ngaStatAktif">31</div><div class="lbl">Pelanggan aktif</div></div>
-          <div class="nga-card nga-stat"><div class="ico">💰</div><div class="num">Rp6,2jt</div><div class="lbl">Pendapatan Okt 2026</div></div>
-          <div class="nga-card nga-stat"><div class="ico">⏳</div><div class="num">3</div><div class="lbl">Expired &lt; 7 hari</div></div>
+          <div class="nga-card nga-stat"><div class="ico">&#128101;</div><div class="num" id="ngaStatTotal">&ndash;</div><div class="lbl">Total pelanggan</div></div>
+          <div class="nga-card nga-stat"><div class="ico">&#9989;</div><div class="num" id="ngaStatAktif">&ndash;</div><div class="lbl">Aktif</div></div>
+          <div class="nga-card nga-stat"><div class="ico">&#128196;</div><div class="num" id="ngaStatHalaman">&ndash;</div><div class="lbl">Total halaman FB</div></div>
+          <div class="nga-card nga-stat"><div class="ico">&#9208;</div><div class="num" id="ngaStatNonaktif">&ndash;</div><div class="lbl">Nonaktif</div></div>
         </div>
         <div class="nga-grid2">
-          <div class="nga-card">
-            <h3>🆕 Pelanggan Terbaru</h3>
-            <div class="nga-tablewrap"><table class="nga-table">
-              <tr><th>Nama</th><th>Paket</th><th>Status</th></tr>
-              <tr><td style="color:#fff">Maya Putri</td><td>Normal</td><td><span class="nga-chip green">AKTIF</span></td></tr>
-              <tr><td style="color:#fff">Dedi Kurniawan</td><td>Promo</td><td><span class="nga-chip green">AKTIF</span></td></tr>
-              <tr><td style="color:#fff">Dewi Lestari</td><td>Normal</td><td><span class="nga-chip green">AKTIF</span></td></tr>
-              <tr><td style="color:#fff">Rina Wulandari</td><td>Promo</td><td><span class="nga-chip green">AKTIF</span></td></tr>
-              <tr><td style="color:#fff">Siti Aminah</td><td>Promo</td><td><span class="nga-chip green">AKTIF</span></td></tr>
-            </table></div>
-          </div>
-          <div class="nga-card">
-            <h3>⚠️ Perlu Perhatian</h3>
-            <div class="nga-tablewrap"><table class="nga-table">
-              <tr><th>Nama</th><th>Expired</th><th>Aksi</th></tr>
-              <tr><td style="color:#fff">Budi Santoso</td><td><span class="nga-chip red">8 Okt 2026</span></td><td><button class="nga-btn small green" onclick="ngaToast('Masa aktif <b>diperpanjang</b> (contoh)')">Perpanjang</button></td></tr>
-              <tr><td style="color:#fff">Agus Wijaya</td><td><span class="nga-chip gray">Expired</span></td><td><button class="nga-btn small green" onclick="ngaToast('Masa aktif <b>diperpanjang</b> (contoh)')">Aktifkan</button></td></tr>
-              <tr><td style="color:#fff">Joko Prasetyo</td><td><span class="nga-chip red">10 Okt 2026</span></td><td><button class="nga-btn small green" onclick="ngaToast('Masa aktif <b>diperpanjang</b> (contoh)')">Perpanjang</button></td></tr>
-            </table></div>
-            <p class="nga-muted" style="margin-top:12px">Kirim pengingat via WhatsApp sebelum expired biar pelanggan perpanjang.</p>
-          </div>
+          <div class="nga-card"><h3>&#128241; Pelanggan</h3><div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Nama</th><th>Email</th><th>Paket</th><th>Status</th></tr></thead><tbody id="ngaRecentBody"></tbody></table></div></div>
+          <div class="nga-card"><h3>&#9888; Perlu Perhatian</h3><div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Nama</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="ngaAtensiBody"></tbody></table></div><p class="nga-muted" style="margin-top:12px">Pelanggan nonaktif &mdash; hubungi untuk perpanjangan.</p></div>
         </div>
       </section>
-
-      <!-- PELANGGAN -->
       <section class="nga-page" id="apage-pelanggan">
         <div class="nga-title">Pelanggan</div>
-        <div class="nga-desc">Daftar semua pembeli NewsGen Studio. <span class="nga-badge-contoh">DATA CONTOH</span></div>
+        <div class="nga-desc">Klik <b>Kelola</b> untuk melihat &amp; mengubah seluruh data pelanggan (akun, halaman FB, komentar, arsip).</div>
         <div class="nga-toolbar">
-          <input class="nga-input nga-search" placeholder="🔍 Cari nama / WhatsApp…" oninput="ngaCari(this.value)">
-          <button class="nga-btn" onclick="ngaOpenModal()">＋ Tambah Pelanggan</button>
+          <input class="nga-input nga-search" placeholder="&#128269; Cari nama / email&hellip;" oninput="pelangganCari(this.value)">
+          <button class="nga-btn" onclick="pelangganTambah()">&#65291; Tambah Pelanggan</button>
         </div>
-        <div class="nga-card" style="padding:8px 12px">
-          <div class="nga-tablewrap"><table class="nga-table" id="ngaTabelPelanggan">
-            <thead><tr><th>Nama</th><th>WhatsApp</th><th>Paket</th><th>Bergabung</th><th>Expired</th><th>Status</th><th>Aksi</th></tr></thead>
-            <tbody id="ngaTabelBody"></tbody>
-          </table></div>
-        </div>
+        <div class="nga-card" style="padding:8px 12px"><div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Nama</th><th>Email</th><th>Paket</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="ngaTabelBody"></tbody></table></div></div>
       </section>
-
-      <!-- PAKET -->
+      <section class="nga-page" id="apage-detail">
+        <button class="nga-btn ghost small nga-backbtn" onclick="goPage('pelanggan')">&larr; Kembali</button>
+        <div class="nga-title" id="ngaDetailNama">Detail Pelanggan</div>
+        <div class="nga-desc" id="ngaDetailSub"></div>
+        <div class="nga-tabs" id="ngaDetailTabs">
+          <button data-tab="akun" class="active" onclick="detailTab('akun')">&#128100; Akun</button>
+          <button data-tab="halaman" onclick="detailTab('halaman')">&#128196; Halaman FB</button>
+          <button data-tab="komentar" onclick="detailTab('komentar')">&#128172; Komentar</button>
+          <button data-tab="arsip" onclick="detailTab('arsip')">&#128193; Arsip</button>
+          <button data-tab="config" onclick="detailTab('config')">&#9881; Config</button>
+        </div>
+        <div id="ngaDetailBody"></div>
+      </section>
       <section class="nga-page" id="apage-paket">
-        <div class="nga-title">Paket & Harga</div>
-        <div class="nga-desc">Paket yang tampil di sales page. <span class="nga-badge-contoh">DATA CONTOH</span></div>
+        <div class="nga-title">Paket &amp; Harga</div>
+        <div class="nga-desc">Paket yang tampil di sales page.</div>
         <div class="nga-paket">
-          <div class="nga-card">
-            <span class="nga-chip violet">PROMO</span>
-            <div class="harga">Rp199.000</div>
-            <div class="coret">Rp450.000</div>
-            <p class="nga-muted" style="margin:12px 0">Paket promo yang tampil di sales page saat ini.</p>
-            <button class="nga-btn small" onclick="ngaToast('Edit paket — <b>segera hadir</b>')">✏️ Edit Paket</button>
-          </div>
-          <div class="nga-card">
-            <span class="nga-chip gray">NORMAL</span>
-            <div class="harga">Rp450.000</div>
-            <p class="nga-muted" style="margin:12px 0">Harga normal / harga coret di sales page.</p>
-            <button class="nga-btn small" onclick="ngaToast('Edit paket — <b>segera hadir</b>')">✏️ Edit Paket</button>
-          </div>
+          <div class="nga-card"><span class="nga-chip violet">PROMO</span><div class="harga">Rp199.000</div><div class="coret">Rp450.000</div><p class="nga-muted" style="margin:12px 0">Paket promo di sales page.</p></div>
+          <div class="nga-card"><span class="nga-chip gray">NORMAL</span><div class="harga">Rp450.000</div><p class="nga-muted" style="margin:12px 0">Harga normal / harga coret.</p></div>
         </div>
       </section>
-
-      <!-- SETTING -->
       <section class="nga-page" id="apage-setting">
         <div class="nga-title">Setting</div>
-        <div class="nga-desc">Pengaturan admin & penjualan.</div>
+        <div class="nga-desc">Pengaturan akun admin ini.</div>
         <div class="nga-card" style="max-width:520px">
-          <h3>👤 Admin</h3>
-          <div class="nga-field"><label class="nga-label">Nama admin</label><input class="nga-input" value="Faizal ground"></div>
-          <div class="nga-field"><label class="nga-label">WhatsApp admin (tujuan tombol beli)</label><input class="nga-input" value="6280000000000"><p class="nga-muted" style="margin-top:6px">Ganti dengan nomor WhatsApp aslimu — tombol beli di sales page & dashboard pelanggan mengarah ke sini.</p></div>
-          <button class="nga-btn" onclick="ngaToast('<b>Tersimpan</b> (contoh)')">💾 Simpan</button>
+          <h3>&#128100; Admin</h3>
+          <div class="nga-field"><label class="nga-label">Nama</label><input class="nga-input" id="ngaSetNama"></div>
+          <div class="nga-field"><label class="nga-label">Email</label><input class="nga-input" id="ngaSetEmail" disabled></div>
+          <div class="nga-field"><label class="nga-label">PIN baru</label><input class="nga-input" id="ngaSetPin" type="password" placeholder="Kosongkan bila tidak ganti"></div>
+          <button class="nga-btn" onclick="adminSimpan()">&#128190; Simpan</button>
         </div>
       </section>
-
     </div>
   </div>
 </div>
-
-<!-- MODAL TAMBAH PELANGGAN -->
-<div class="nga-modal-bg" id="ngaModalBg">
-  <div class="nga-modal">
-    <h3>＋ Tambah Pelanggan</h3>
-    <div class="nga-field"><label class="nga-label">Nama</label><input class="nga-input" id="ngaFNama" placeholder="Nama pelanggan"></div>
-    <div class="nga-field"><label class="nga-label">WhatsApp</label><input class="nga-input" id="ngaFWa" placeholder="62812xxxxxxx"></div>
-    <div class="nga-field"><label class="nga-label">Paket</label><select class="nga-select" id="ngaFPaket"><option>Promo — Rp199.000</option><option>Normal — Rp450.000</option></select></div>
-    <div class="nga-field"><label class="nga-label">Durasi</label><select class="nga-select" id="ngaFDurasi"><option>1 bulan</option><option>3 bulan</option><option>12 bulan</option></select></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="nga-btn ghost" onclick="ngaCloseModal()">Batal</button>
-      <button class="nga-btn" onclick="ngaSimpanPelanggan()">Simpan</button>
-    </div>
-  </div>
-</div>
+<div class="nga-modal-bg" id="ngaModalBg"><div class="nga-modal" id="ngaModalBox"></div></div>
 <div class="nga-toast" id="ngaToast"></div>
+
 `;
 
 (function(){
-  /* ============================================================
-     KONFIGURASI DATA
-     - dummy: true  -> pakai DATA DUMMY di DUMMY_DB (bawah ini)
-     - dummy: false -> pakai DATA ASLI dari backend yang dipilih
-     - backend: 'spreadsheet' | 'firebase' | 'supabase'
-     Cukup ubah satu flag ini untuk pindah sumber data.
-  ============================================================ */
-  const CONFIG = { dummy: true, backend: 'supabase' };
-
-  /* ============ DATA DUMMY (dipakai saat dummy:true) ============ */
-  const DUMMY_DB = {
-    pelanggan: [
-      { nama:'Budi Santoso',   wa:'0812-3456-7890', paket:'PROMO',  gabung:'12 Sep 2026', expired:'8 Okt 2026',  aktif:true  },
-      { nama:'Siti Aminah',    wa:'0813-9876-5432', paket:'PROMO',  gabung:'28 Sep 2026', expired:'28 Okt 2026', aktif:true  },
-      { nama:'Dewi Lestari',   wa:'0821-1122-3344', paket:'NORMAL', gabung:'3 Okt 2026',  expired:'3 Nov 2026',  aktif:true  },
-      { nama:'Rina Wulandari', wa:'0819-2233-4455', paket:'PROMO',  gabung:'1 Okt 2026',  expired:'1 Nov 2026',  aktif:true  },
-      { nama:'Dedi Kurniawan', wa:'0822-3344-5566', paket:'PROMO',  gabung:'2 Okt 2026',  expired:'2 Nov 2026',  aktif:true  },
-      { nama:'Maya Putri',     wa:'0815-7788-9900', paket:'NORMAL', gabung:'4 Okt 2026',  expired:'4 Nov 2026',  aktif:true  },
-      { nama:'Agus Wijaya',    wa:'0857-6655-4433', paket:'PROMO',  gabung:'15 Agu 2026', expired:'15 Sep 2026', aktif:false }
-    ]
+  /* ============ KONFIGURASI ============ */
+  const BACKEND_CONFIG = {
+    supabase:    { url: 'https://ppenobzyzbkmdaiojygn.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZW5vYnp5emJrbWRhaW9qeWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTEwNjIsImV4cCI6MjEwNjY4NzA2Mn0.4HrDB0w9i4m3ScN9-Yz7p-gqsePuS9djgz_0Oi5GAY0' },
+    spreadsheet: { webAppUrl: 'https://script.google.com/macros/s/AKfycbznky3kLVeMqD-gOQ2WhJZd_6ST32DHzMQq73QuB7coTljyMpXHhcT5cSAFpn5uqyLSPg/exec' }
   };
 
-  /* ============ BACKEND ASLI (dipakai saat dummy:false) ============
-     Isi fungsi-fungsi ini saat backend sudah dikonfigurasi. */
-  function backendBelum(nama){
-    ngaToast('Backend <b>'+nama+'</b> belum dikonfigurasi');
-    return Promise.resolve([]);
-  }
-  function stubBackend(nama){
-    return { pelanggan: {
-      list:    function(){ return backendBelum(nama); },
-      tambah:  function(p){ return backendBelum(nama); },
-      setAktif:function(wa, aktif){ return backendBelum(nama); },
-      hapus:   function(wa){ return backendBelum(nama); }
-    }};
-  }
-  const Backend = {
-    spreadsheet: stubBackend('spreadsheet'),
-    firebase:    stubBackend('firebase'),
-    supabase:    stubBackend('supabase')
+  /* ============ KLIEN SUPABASE ============ */
+  const Supa = {
+    async req(table, method, body, query){
+      const { url, anonKey } = BACKEND_CONFIG.supabase;
+      const res = await fetch(url.replace(/\/$/,'') + '/rest/v1/' + table + (query||''), {
+        method: method,
+        headers: { apikey: anonKey, Authorization: 'Bearer ' + anonKey, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      if(!res.ok) throw new Error('Supabase ' + res.status);
+      const t = await res.text();
+      return t ? JSON.parse(t) : [];
+    },
+    insert(table, row){ return this.req(table, 'POST', row); },
+    update(table, id, row){ return this.req(table, 'PATCH', row, '?id=eq.' + encodeURIComponent(id)); },
+    remove(table, id){ return this.req(table, 'DELETE', null, '?id=eq.' + encodeURIComponent(id)); }
   };
 
-  /* ============ DATA LAYER (satu pintu) ============
-     Semua kode UI memanggil DB.pelanggan.*, bukan DUMMY_DB / Backend langsung. */
-  const DB = {
-    pelanggan: {
-      list: function(){
-        return CONFIG.dummy ? Promise.resolve(DUMMY_DB.pelanggan)
-                            : Backend[CONFIG.backend].pelanggan.list();
-      },
-      tambah: function(p){
-        if(CONFIG.dummy){ DUMMY_DB.pelanggan.push(p); return Promise.resolve(p); }
-        return Backend[CONFIG.backend].pelanggan.tambah(p);
-      },
-      setAktif: function(wa, aktif){
-        if(CONFIG.dummy){
-          const x = DUMMY_DB.pelanggan.find(function(y){ return y.wa===wa; });
-          if(x) x.aktif = aktif;
-          return Promise.resolve(x);
-        }
-        return Backend[CONFIG.backend].pelanggan.setAktif(wa, aktif);
-      },
-      hapus: function(wa){
-        if(CONFIG.dummy){
-          const i = DUMMY_DB.pelanggan.findIndex(function(y){ return y.wa===wa; });
-          if(i>=0) DUMMY_DB.pelanggan.splice(i,1);
-          return Promise.resolve(true);
-        }
-        return Backend[CONFIG.backend].pelanggan.hapus(wa);
-      }
+  /* ============ KLIEN WEB APP (spreadsheet per pelanggan) ============ */
+  const WApp = {
+    base(p){ var u = (p && p.webapp_url) || BACKEND_CONFIG.spreadsheet.webAppUrl || ''; return u.replace(/\/$/,''); },
+    async get(base, params){
+      var q = Object.keys(params).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      const res = await fetch(base + '?' + q);
+      if(!res.ok) throw new Error('WebApp ' + res.status);
+      return res.json();
+    },
+    async post(base, action, data){
+      const res = await fetch(base, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action }, data || {}))
+      });
+      if(!res.ok) throw new Error('WebApp ' + res.status);
+      return res.json();
     }
   };
 
-  var titles = { ringkasan:'Ringkasan', pelanggan:'Pelanggan', paket:'Paket & Harga', setting:'Setting' };
-  var filterQ = '';
+  /* ============ SESI ADMIN ============ */
+  function ngaSession(){
+    try { return JSON.parse(sessionStorage.getItem('nga_admin') || 'null'); }
+    catch(e){ return null; }
+  }
+  function ngaSetSession(a){
+    if(a) sessionStorage.setItem('nga_admin', JSON.stringify({ id:a.id, nama:a.nama, email:a.email }));
+    else sessionStorage.removeItem('nga_admin');
+  }
+  window.ngaDoLogin = function(){
+    var email = document.getElementById('ngaLoginEmail').value.trim().toLowerCase();
+    var pin = document.getElementById('ngaLoginPin').value.trim();
+    var err = document.getElementById('ngaLoginErr');
+    err.style.display = 'none';
+    if(!email || !pin){ err.textContent = 'Isi email dan PIN dulu.'; err.style.display = 'block'; return; }
+    Supa.req('admin','GET',null,'?select=*&email=eq.'+encodeURIComponent(email)+'&pin=eq.'+encodeURIComponent(pin))
+      .then(function(r){
+        if(r && r[0]){ ngaSetSession(r[0]); location.reload(); }
+        else { err.textContent = 'Email / PIN salah.'; err.style.display = 'block'; }
+      })
+      .catch(function(){ err.textContent = 'Tidak bisa hubungi server.'; err.style.display = 'block'; });
+  };
+  window.ngaLogout = function(){ ngaSetSession(null); location.reload(); };
 
-  // Navigasi
-  function goPage(name){
+  /* ============ DATA LAYER ============ */
+  const DB = {
+    pelanggan: {
+      list(){ return Supa.req('pelanggan','GET',null,'?select=*&order=id.desc'); },
+      tambah(p){ return Supa.insert('pelanggan', p); },
+      update(id, patch){ return Supa.update('pelanggan', id, patch); },
+      hapus(id){ return Supa.remove('pelanggan', id); }
+    },
+    halaman: {
+      list(pid){ return Supa.req('halaman','GET',null,'?select=*&pelanggan_id=eq.'+encodeURIComponent(pid)+'&order=id'); },
+      tambah(h){ return Supa.insert('halaman', h); },
+      update(id, patch){ return Supa.update('halaman', id, patch); },
+      hapus(id){ return Supa.remove('halaman', id); }
+    }
+  };
+
+  /* ============ UTIL ============ */
+  function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':s); return d.innerHTML; }
+  var toastEl, toastT;
+  window.ngaToast = function(html){
+    toastEl.innerHTML = html; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(function(){ toastEl.classList.remove('show'); }, 2600);
+  };
+  window.ngaModal = function(html){ document.getElementById('ngaModalBox').innerHTML = html; document.getElementById('ngaModalBg').classList.add('show'); };
+  window.ngaCloseModal = function(){ document.getElementById('ngaModalBg').classList.remove('show'); };
+  window.goPage = function(name){
     document.querySelectorAll('#ngaNav button').forEach(function(b){ b.classList.toggle('active', b.dataset.target===name); });
     document.querySelectorAll('.nga-page').forEach(function(p){ p.classList.toggle('active', p.id==='apage-'+name); });
-    document.getElementById('ngaPageTitle').textContent = titles[name] || name;
+    var t = { ringkasan:'Ringkasan', pelanggan:'Pelanggan', detail:'Detail Pelanggan', paket:'Paket & Harga', setting:'Setting' };
+    document.getElementById('ngaPageTitle').textContent = t[name] || name;
     document.getElementById('ngaSidebar').classList.remove('open');
     document.getElementById('ngaOverlay').classList.remove('show');
     window.scrollTo({top:0, behavior:'smooth'});
-  }
-  document.querySelectorAll('#ngaNav button').forEach(function(b){
-    b.addEventListener('click', function(){ goPage(b.dataset.target); });
-  });
+    if(name==='ringkasan') ringkasanMuat();
+    if(name==='pelanggan') pelangganMuat();
+  };
 
-  // Burger mobile
+  var NGA = { pelanggan: [], q: '', detail: null, dtab: 'akun' };
+  function chipAktif(p){
+    return (p.aktif === false) ? '<span class="nga-chip gray">NONAKTIF</span>' : '<span class="nga-chip green">AKTIF</span>';
+  }
+
+  /* ============ RINGKASAN ============ */
+  async function ringkasanMuat(){
+    try {
+      var pl = await DB.pelanggan.list();
+      var hl = await Supa.req('halaman','GET',null,'?select=id');
+      var aktif = pl.filter(function(p){ return p.aktif !== false; }).length;
+      document.getElementById('ngaStatTotal').textContent = pl.length;
+      document.getElementById('ngaStatAktif').textContent = aktif;
+      document.getElementById('ngaStatNonaktif').textContent = pl.length - aktif;
+      document.getElementById('ngaStatHalaman').textContent = hl.length;
+      document.getElementById('ngaRecentBody').innerHTML = pl.slice(0,5).map(function(p){
+        return '<tr><td style="color:#fff">' + esc(p.nama) + '</td><td>' + esc(p.email) + '</td><td>' + esc(p.paket||'-') + '</td><td>' + chipAktif(p) + '</td></tr>';
+      }).join('') || '<tr><td colspan="4" style="text-align:center;color:#71717a">Belum ada pelanggan.</td></tr>';
+      var non = pl.filter(function(p){ return p.aktif === false; });
+      document.getElementById('ngaAtensiBody').innerHTML = non.map(function(p){
+        return '<tr><td style="color:#fff">' + esc(p.nama) + '</td><td><span class="nga-chip gray">NONAKTIF</span></td><td><button class="nga-btn small green" onclick="pelangganSetAktif(\'' + p.id + '\',true)">Aktifkan</button></td></tr>';
+      }).join('') || '<tr><td colspan="3" style="text-align:center;color:#71717a">Semua pelanggan aktif. &#128077;</td></tr>';
+    } catch(e){ ngaToast('Gagal muat data: ' + esc(e.message)); }
+  }
+
+  /* ============ PELANGGAN: LIST + CRUD ============ */
+  async function pelangganMuat(){
+    try {
+      NGA.pelanggan = await DB.pelanggan.list();
+      pelangganRender();
+    } catch(e){ ngaToast('Gagal muat pelanggan: ' + esc(e.message)); }
+  }
+  window.pelangganCari = function(q){ NGA.q = (q||'').toLowerCase(); pelangganRender(); };
+  function pelangganRender(){
+    var list = NGA.pelanggan.filter(function(p){
+      return !NGA.q || (p.nama+' '+p.email).toLowerCase().indexOf(NGA.q) >= 0;
+    });
+    document.getElementById('ngaTabelBody').innerHTML = list.map(function(p){
+      return '<tr><td style="color:#fff">' + esc(p.nama) + '</td><td>' + esc(p.email) + '</td><td>' + esc(p.paket||'-') + '</td><td>' + chipAktif(p) + '</td>' +
+        '<td style="white-space:nowrap">' +
+        '<button class="nga-btn small" onclick="detailBuka(\'' + p.id + '\')">Kelola</button> ' +
+        ((p.aktif === false)
+          ? '<button class="nga-btn small green" onclick="pelangganSetAktif(\'' + p.id + '\',true)">Aktifkan</button>'
+          : '<button class="nga-btn small ghost" onclick="pelangganSetAktif(\'' + p.id + '\',false)">Nonaktifkan</button>') +
+        ' <button class="nga-btn small nga-danger" onclick="pelangganHapus(\'' + p.id + '\')">Hapus</button>' +
+        '</td></tr>';
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:#71717a">Belum ada pelanggan.</td></tr>';
+  }
+  window.pelangganSetAktif = async function(id, aktif){
+    try { await DB.pelanggan.update(id, { aktif: aktif }); ngaToast(aktif ? 'Pelanggan <b>diaktifkan</b>' : 'Pelanggan <b>dinonaktifkan</b>'); pelangganMuat(); if(document.getElementById('apage-ringkasan').classList.contains('active')) ringkasanMuat(); }
+    catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+  window.pelangganHapus = async function(id){
+    var p = NGA.pelanggan.find(function(x){ return x.id === id; });
+    if(!confirm('Hapus pelanggan "' + (p ? p.nama : id) + '"?\n\nData akun & halamannya dihapus dari Supabase.\nSpreadsheet miliknya TIDAK ikut terhapus (hapus manual di Drive bila perlu).')) return;
+    try {
+      var hl = await DB.halaman.list(id);
+      for(var i = 0; i < hl.length; i++) await DB.halaman.hapus(hl[i].id);
+      await DB.pelanggan.hapus(id);
+      ngaToast('Pelanggan <b>dihapus</b>');
+      pelangganMuat();
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+  function pinAcak(){ return String(Math.floor(1000 + Math.random()*9000)); }
+  window.pelangganTambah = function(){
+    var pin = pinAcak();
+    ngaModal(
+      '<h3>&#65291; Tambah Pelanggan</h3>' +
+      '<div class="nga-gridform">' +
+      '<div class="nga-field"><label class="nga-label">Nama *</label><input class="nga-input" id="mNama" placeholder="Nama pelanggan"></div>' +
+      '<div class="nga-field"><label class="nga-label">Email *</label><input class="nga-input" id="mEmail" type="email" placeholder="email@dia.com"></div>' +
+      '<div class="nga-field"><label class="nga-label">PIN *</label><input class="nga-input" id="mPin" value="' + pin + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">Paket</label><select class="nga-select" id="mPaket"><option>PROMO</option><option>NORMAL</option><option>REGULER</option></select></div>' +
+      '<div class="nga-field"><label class="nga-label">Model AI</label><select class="nga-select" id="mModel"><option>gemini-2.5-flash</option><option>gemini-2.5-pro</option><option>gpt-4o-mini</option><option>gpt-4o</option></select></div>' +
+      '<div class="nga-field"><label class="nga-label">Web App URL (opsional)</label><input class="nga-input" id="mWebapp" placeholder="Kosongkan = pakai utama"></div>' +
+      '</div>' +
+      '<p class="nga-muted" style="margin:10px 0">Sistem otomatis: buatkan spreadsheet pelanggan + daftarkan ke Web App.</p>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="nga-btn ghost" onclick="ngaCloseModal()">Batal</button><button class="nga-btn" onclick="pelangganSimpanBaru()">Simpan</button></div>'
+    );
+  };
+  window.pelangganSimpanBaru = async function(){
+    var nama = document.getElementById('mNama').value.trim();
+    var email = document.getElementById('mEmail').value.trim().toLowerCase();
+    var pin = document.getElementById('mPin').value.trim();
+    if(!nama || !email || !pin){ ngaToast('Nama, email, dan PIN <b>wajib diisi</b>'); return; }
+    var id = 'cust' + Date.now().toString(36);
+    var p = { id: id, nama: nama, email: email, pin: pin,
+      paket: document.getElementById('mPaket').value,
+      model: document.getElementById('mModel').value, apiKey: '',
+      webapp_url: document.getElementById('mWebapp').value.trim(), aktif: true };
+    try {
+      await DB.pelanggan.tambah(p);
+      // Daftarkan ke Web App: buatkan spreadsheet + mapping
+      try {
+        var base = WApp.base(p);
+        var r = await WApp.post(base, 'pelanggan_register', { pelanggan_id: id, nama: nama });
+        ngaToast('Pelanggan <b>ditambahkan</b> + spreadsheet siap');
+      } catch(e2){ ngaToast('Pelanggan ditambahkan, tapi spreadsheet <b>gagal</b>: ' + esc(e2.message)); }
+      ngaCloseModal(); pelangganMuat();
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+
+  /* ============ DETAIL PELANGGAN ============ */
+  window.detailBuka = async function(id){
+    try {
+      var rows = await Supa.req('pelanggan','GET',null,'?select=*&id=eq.'+encodeURIComponent(id));
+      if(!rows || !rows[0]){ ngaToast('Pelanggan tidak ditemukan'); return; }
+      NGA.detail = rows[0]; NGA.dtab = 'akun';
+      document.getElementById('ngaDetailNama').textContent = NGA.detail.nama;
+      document.getElementById('ngaDetailSub').textContent = NGA.detail.email + ' • ' + (NGA.detail.paket || '-');
+      goPage('detail'); detailTab('akun');
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+  window.detailTab = function(tab){
+    NGA.dtab = tab;
+    document.querySelectorAll('#ngaDetailTabs button').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === tab); });
+    var body = document.getElementById('ngaDetailBody');
+    body.innerHTML = '<div class="nga-card" style="text-align:center;color:#71717a">Memuat…</div>';
+    if(tab === 'akun') dtabAkun();
+    if(tab === 'halaman') dtabHalaman();
+    if(tab === 'komentar') dtabKomentar();
+    if(tab === 'arsip') dtabArsip();
+    if(tab === 'config') dtabConfig();
+  };
+  function dtabAkun(){
+    var p = NGA.detail;
+    document.getElementById('ngaDetailBody').innerHTML =
+      '<div class="nga-card" style="max-width:640px"><h3>&#128100; Data Akun</h3>' +
+      '<div class="nga-gridform">' +
+      '<div class="nga-field"><label class="nga-label">Nama</label><input class="nga-input" id="dNama" value="' + esc(p.nama) + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">Email</label><input class="nga-input" id="dEmail" value="' + esc(p.email) + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">PIN</label><input class="nga-input" id="dPin" value="' + esc(p.pin) + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">Paket</label><select class="nga-select" id="dPaket">' +
+        ['PROMO','NORMAL','REGULER'].map(function(x){ return '<option' + (p.paket === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+      '<div class="nga-field"><label class="nga-label">Model AI</label><select class="nga-select" id="dModel">' +
+        ['gemini-2.5-flash','gemini-2.5-pro','gpt-4o-mini','gpt-4o'].map(function(x){ return '<option' + (p.model === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+      '<div class="nga-field"><label class="nga-label">API Key AI</label><input class="nga-input" id="dApiKey" value="' + esc(p.apiKey || '') + '" placeholder="Kosongkan bila belum ada"></div>' +
+      '</div>' +
+      '<div class="nga-field"><label class="nga-label">Web App URL (akun Google pelaksana)</label><input class="nga-input" id="dWebapp" value="' + esc(p.webapp_url || '') + '" placeholder="Kosongkan = pakai Web App utama"></div>' +
+      '<div class="nga-field"><label class="nga-label">Status</label><select class="nga-select" id="dAktif"><option value="1"' + (p.aktif !== false ? ' selected' : '') + '>Aktif</option><option value="0"' + (p.aktif === false ? ' selected' : '') + '>Nonaktif</option></select></div>' +
+      '<button class="nga-btn" onclick="akunSimpan()">&#128190; Simpan Perubahan</button></div>' +
+      '<div class="nga-card" style="max-width:640px;border-color:rgba(239,68,68,.35)"><h3 style="color:#fca5a5">&#9888; Zona Berbahaya</h3>' +
+      '<p class="nga-muted" style="margin-bottom:12px">Menghapus akun + seluruh halaman FB-nya dari Supabase. Spreadsheet miliknya tidak ikut terhapus.</p>' +
+      '<button class="nga-btn nga-danger" onclick="pelangganHapus(\'' + p.id + '\')">Hapus Pelanggan Ini</button></div>';
+  }
+  window.akunSimpan = async function(){
+    var p = NGA.detail;
+    var patch = {
+      nama: document.getElementById('dNama').value.trim(),
+      email: document.getElementById('dEmail').value.trim().toLowerCase(),
+      pin: document.getElementById('dPin').value.trim(),
+      paket: document.getElementById('dPaket').value,
+      model: document.getElementById('dModel').value,
+      apiKey: document.getElementById('dApiKey').value.trim(),
+      webapp_url: document.getElementById('dWebapp').value.trim(),
+      aktif: document.getElementById('dAktif').value === '1'
+    };
+    if(!patch.nama || !patch.email || !patch.pin){ ngaToast('Nama, email, PIN wajib diisi'); return; }
+    try {
+      await DB.pelanggan.update(p.id, patch);
+      Object.assign(NGA.detail, patch);
+      document.getElementById('ngaDetailNama').textContent = patch.nama;
+      document.getElementById('ngaDetailSub').textContent = patch.email + ' • ' + patch.paket;
+      ngaToast('<b>Tersimpan</b>');
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+
+  /* ---- Tab Halaman ---- */
+  async function dtabHalaman(){
+    var body = document.getElementById('ngaDetailBody');
+    try {
+      var list = await DB.halaman.list(NGA.detail.id);
+      body.innerHTML =
+        '<div class="nga-card"><div class="nga-rowflex" style="justify-content:space-between;margin-bottom:12px"><h3>&#128196; Halaman Facebook (' + list.length + ')</h3><button class="nga-btn small" onclick="halamanTambah()">&#65291; Tambah</button></div>' +
+        '<div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Nama</th><th>Page ID</th><th>Token</th><th>Webhook</th><th>Aksi</th></tr></thead><tbody>' +
+        (list.map(function(h){
+          var tok = h.token ? esc(String(h.token).slice(0,6)) + '••••••' : '<span class="nga-muted">-</span>';
+          return '<tr><td style="color:#fff">' + esc(h.nama) + '</td><td>' + esc(h.pageId || '-') + '</td><td>' + tok + '</td><td>' + esc(h.webhook || '-') + '</td>' +
+            '<td style="white-space:nowrap"><button class="nga-btn small ghost" onclick="halamanEdit(\'' + h.id + '\')">Edit</button> ' +
+            '<button class="nga-btn small nga-danger" onclick="halamanHapus(\'' + h.id + '\')">Hapus</button></td></tr>';
+        }).join('') || '<tr><td colspan="5" style="text-align:center;color:#71717a">Belum ada halaman.</td></tr>') +
+        '</tbody></table></div></div>';
+      NGA._halaman = list;
+    } catch(e){ body.innerHTML = '<div class="nga-card" style="color:#fca5a5">Gagal: ' + esc(e.message) + '</div>'; }
+  }
+  window.halamanTambah = function(){
+    ngaModal('<h3>&#65291; Tambah Halaman</h3>' +
+      '<div class="nga-field"><label class="nga-label">Nama Halaman *</label><input class="nga-input" id="hNama"></div>' +
+      '<div class="nga-field"><label class="nga-label">Page ID *</label><input class="nga-input" id="hPageId"></div>' +
+      '<div class="nga-field"><label class="nga-label">Akses Token</label><input class="nga-input" id="hToken"></div>' +
+      '<div class="nga-field"><label class="nga-label">Kode Webhook</label><input class="nga-input" id="hWebhook"></div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="nga-btn ghost" onclick="ngaCloseModal()">Batal</button><button class="nga-btn" onclick="halamanSimpanBaru()">Simpan</button></div>');
+  };
+  window.halamanSimpanBaru = async function(){
+    var nama = document.getElementById('hNama').value.trim();
+    var pageId = document.getElementById('hPageId').value.trim();
+    if(!nama || !pageId){ ngaToast('Nama & Page ID wajib diisi'); return; }
+    try {
+      await DB.halaman.tambah({ id: 'h' + Date.now().toString(36), pelanggan_id: NGA.detail.id, nama: nama, pageId: pageId,
+        token: document.getElementById('hToken').value.trim(), webhook: document.getElementById('hWebhook').value.trim() });
+      ngaCloseModal(); ngaToast('Halaman <b>ditambahkan</b>'); dtabHalaman();
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+  window.halamanEdit = function(id){
+    var h = (NGA._halaman || []).find(function(x){ return x.id === id; });
+    if(!h) return;
+    ngaModal('<h3>&#9998; Edit Halaman</h3>' +
+      '<div class="nga-field"><label class="nga-label">Nama Halaman</label><input class="nga-input" id="hNama" value="' + esc(h.nama) + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">Page ID</label><input class="nga-input" id="hPageId" value="' + esc(h.pageId || '') + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">Akses Token</label><input class="nga-input" id="hToken" value="' + esc(h.token || '') + '"></div>' +
+      '<div class="nga-field"><label class="nga-label">Kode Webhook</label><input class="nga-input" id="hWebhook" value="' + esc(h.webhook || '') + '"></div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="nga-btn ghost" onclick="ngaCloseModal()">Batal</button><button class="nga-btn" onclick="halamanSimpanEdit(\'' + h.id + '\')">Simpan</button></div>');
+  };
+  window.halamanSimpanEdit = async function(id){
+    try {
+      await DB.halaman.update(id, { nama: document.getElementById('hNama').value.trim(), pageId: document.getElementById('hPageId').value.trim(),
+        token: document.getElementById('hToken').value.trim(), webhook: document.getElementById('hWebhook').value.trim() });
+      ngaCloseModal(); ngaToast('<b>Tersimpan</b>'); dtabHalaman();
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+  window.halamanHapus = async function(id){
+    if(!confirm('Hapus halaman ini?')) return;
+    try { await DB.halaman.hapus(id); ngaToast('<b>Dihapus</b>'); dtabHalaman(); }
+    catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+
+  /* ---- Tab Komentar ---- */
+  function wbase(){ return WApp.base(NGA.detail); }
+  async function dtabKomentar(){
+    var body = document.getElementById('ngaDetailBody');
+    try {
+      var r = await WApp.get(wbase(), { action: 'komentar', pid: NGA.detail.id });
+      var list = (r && r.rows) || [];
+      NGA._komentar = list;
+      body.innerHTML =
+        '<div class="nga-card"><div class="nga-rowflex" style="justify-content:space-between;margin-bottom:12px"><h3>&#128172; Komentar (' + list.length + ')</h3><button class="nga-btn small ghost" onclick="detailTab(\'komentar\')">Muat ulang</button></div>' +
+        '<p class="nga-muted" style="margin-bottom:12px">Dari spreadsheet pelanggan via Web App.</p>' +
+        '<div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Nama</th><th>Halaman</th><th>Waktu</th><th>Pesan</th><th>Balasan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>' +
+        (list.map(function(k){
+          var chip = k.status === 'terkirim' ? '<span class="nga-chip green">TERKIRIM</span>' : '<span class="nga-chip orange">REVIEW</span>';
+          return '<tr><td style="color:#fff">' + esc(k.nama) + '</td><td>' + esc(k.halaman || '') + '</td><td>' + esc(k.waktu || '') + '</td>' +
+            '<td style="max-width:220px">' + esc(k.pesan || '') + '</td><td style="max-width:220px">' + esc(k.balasan || '-') + '</td><td>' + chip + '</td>' +
+            '<td style="white-space:nowrap"><button class="nga-btn small ghost" onclick="komentarEditBalasan(\'' + k.id + '\')">Balasan</button> ' +
+            '<button class="nga-btn small nga-danger" onclick="komentarHapus(\'' + k.id + '\')">Hapus</button></td></tr>';
+        }).join('') || '<tr><td colspan="7" style="text-align:center;color:#71717a">Belum ada komentar.</td></tr>') +
+        '</tbody></table></div></div>';
+    } catch(e){ body.innerHTML = '<div class="nga-card" style="color:#fca5a5">Gagal: ' + esc(e.message) + '</div>'; }
+  }
+  window.komentarEditBalasan = function(id){
+    var k = (NGA._komentar || []).find(function(x){ return String(x.id) === String(id); });
+    if(!k) return;
+    ngaModal('<h3>&#128172; Balasan untuk ' + esc(k.nama) + '</h3>' +
+      '<p class="nga-muted" style="margin-bottom:10px">"' + esc(k.pesan || '') + '"</p>' +
+      '<div class="nga-field"><label class="nga-label">Balasan</label><textarea class="nga-input" id="kBalasan" rows="4">' + esc(k.balasan || '') + '</textarea></div>' +
+      '<div class="nga-field"><label class="nga-label">Status</label><select class="nga-select" id="kStatus"><option value="menunggu"' + (k.status !== 'terkirim' ? ' selected' : '') + '>Review</option><option value="terkirim"' + (k.status === 'terkirim' ? ' selected' : '') + '>Terkirim</option></select></div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="nga-btn ghost" onclick="ngaCloseModal()">Batal</button><button class="nga-btn" onclick="komentarSimpanBalasan(\'' + k.id + '\')">Simpan</button></div>');
+  };
+  window.komentarSimpanBalasan = async function(id){
+    try {
+      await WApp.post(wbase(), 'komentar_update', { pid: NGA.detail.id, id: id,
+        patch: { balasan: document.getElementById('kBalasan').value, status: document.getElementById('kStatus').value } });
+      ngaCloseModal(); ngaToast('<b>Tersimpan</b>'); dtabKomentar();
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+  window.komentarHapus = async function(id){
+    if(!confirm('Hapus komentar ini dari spreadsheet pelanggan?')) return;
+    try { await WApp.post(wbase(), 'komentar_hapus', { pid: NGA.detail.id, id: id }); ngaToast('<b>Dihapus</b>'); dtabKomentar(); }
+    catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+
+  /* ---- Tab Arsip ---- */
+  async function dtabArsip(){
+    var body = document.getElementById('ngaDetailBody');
+    try {
+      var r = await WApp.get(wbase(), { action: 'arsip', pid: NGA.detail.id });
+      var list = (r && r.rows) || [];
+      body.innerHTML = '<div class="nga-card"><h3 style="margin-bottom:12px">&#128193; Arsip Publish (' + list.length + ')</h3>' +
+        '<div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Waktu</th><th>Aksi</th><th>Judul</th><th>Halaman</th><th>Detail</th></tr></thead><tbody>' +
+        (list.map(function(a){
+          return '<tr><td>' + esc(a.waktu || '') + '</td><td>' + esc(a.aksi || '') + '</td><td style="color:#fff;max-width:260px">' + esc(a.judul || '') + '</td><td>' + esc(a.halaman || '') + '</td><td>' + esc(a.detail || '') + '</td></tr>';
+        }).join('') || '<tr><td colspan="5" style="text-align:center;color:#71717a">Arsip kosong.</td></tr>') +
+        '</tbody></table></div></div>';
+    } catch(e){ body.innerHTML = '<div class="nga-card" style="color:#fca5a5">Gagal: ' + esc(e.message) + '</div>'; }
+  }
+
+  /* ---- Tab Config ---- */
+  async function dtabConfig(){
+    var body = document.getElementById('ngaDetailBody');
+    try {
+      var r = await WApp.get(wbase(), { action: 'config', pid: NGA.detail.id });
+      var cfg = (r && r.config) || {};
+      var on = String(cfg.auto_reply) === '1';
+      body.innerHTML = '<div class="nga-card" style="max-width:520px"><h3>&#9881; Config Pelanggan</h3>' +
+        '<div class="nga-field"><label class="nga-label">Auto-reply komentar</label><select class="nga-select" id="cAutoReply"><option value="1"' + (on ? ' selected' : '') + '>ON</option><option value="0"' + (!on ? ' selected' : '') + '>OFF</option></select></div>' +
+        '<button class="nga-btn" onclick="configSimpan()">&#128190; Simpan</button>' +
+        '<p class="nga-muted" style="margin-top:12px">Disimpan di sheet Config milik spreadsheet pelanggan.</p></div>';
+    } catch(e){ body.innerHTML = '<div class="nga-card" style="color:#fca5a5">Gagal: ' + esc(e.message) + '</div>'; }
+  }
+  window.configSimpan = async function(){
+    try {
+      await WApp.post(wbase(), 'config_set', { pid: NGA.detail.id, kunci: 'auto_reply', nilai: document.getElementById('cAutoReply').value });
+      ngaToast('<b>Tersimpan</b>');
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+
+  /* ============ SETTING ADMIN ============ */
+  window.adminSimpan = async function(){
+    var s = ngaSession(); if(!s) return;
+    var patch = { nama: document.getElementById('ngaSetNama').value.trim() };
+    var pin = document.getElementById('ngaSetPin').value.trim();
+    if(pin) patch.pin = pin;
+    try {
+      await Supa.update('admin', s.id, patch);
+      s.nama = patch.nama; sessionStorage.setItem('nga_admin', JSON.stringify(s));
+      document.getElementById('ngaAdminName').textContent = s.nama;
+      document.getElementById('ngaSetPin').value = '';
+      ngaToast('<b>Tersimpan</b>');
+    } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
+  };
+
+  /* ============ INIT ============ */
+  toastEl = document.getElementById('ngaToast');
+  document.getElementById('ngaModalBg').addEventListener('click', function(e){ if(e.target === this) ngaCloseModal(); });
+  document.querySelectorAll('#ngaNav button').forEach(function(b){ b.addEventListener('click', function(){ goPage(b.dataset.target); }); });
   document.getElementById('ngaBurger').addEventListener('click', function(){
     document.getElementById('ngaBurger').classList.toggle('open');
     document.getElementById('ngaSidebar').classList.toggle('open');
     document.getElementById('ngaOverlay').classList.toggle('show');
   });
   document.getElementById('ngaOverlay').addEventListener('click', function(){
-    document.getElementById('ngaSidebar').classList.remove('open');
-    this.classList.remove('show');
+    document.getElementById('ngaSidebar').classList.remove('open'); this.classList.remove('show');
+  });
+  ['ngaLoginEmail','ngaLoginPin'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown', function(e){ if(e.key === 'Enter') ngaDoLogin(); });
   });
 
-  // Toast
-  var toastEl = document.getElementById('ngaToast'), toastT;
-  window.ngaToast = function(html){
-    toastEl.innerHTML = html;
-    toastEl.classList.add('show');
-    clearTimeout(toastT);
-    toastT = setTimeout(function(){ toastEl.classList.remove('show'); }, 2600);
-  };
-
-  // Modal tambah pelanggan
-  window.ngaOpenModal = function(){ document.getElementById('ngaModalBg').classList.add('show'); };
-  window.ngaCloseModal = function(){ document.getElementById('ngaModalBg').classList.remove('show'); };
-  document.getElementById('ngaModalBg').addEventListener('click', function(e){
-    if(e.target === this) ngaCloseModal();
-  });
-
-  function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-  function tglExpired(durasi){
-    var d = new Date();
-    var bulan = durasi.indexOf('12')===0 ? 12 : (durasi.indexOf('3')===0 ? 3 : 1);
-    d.setMonth(d.getMonth()+bulan);
-    var bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    return d.getDate()+' '+bln[d.getMonth()]+' '+d.getFullYear();
+  if(!ngaSession()){
+    document.getElementById('nga-login').style.display = 'flex';
+  } else {
+    var s = ngaSession();
+    document.getElementById('ngaApp').style.display = 'flex';
+    document.getElementById('ngaAdminName').textContent = s.nama || 'Admin';
+    document.getElementById('ngaSetNama').value = s.nama || '';
+    document.getElementById('ngaSetEmail').value = s.email || '';
+    ringkasanMuat();
   }
-  function hariIni(){
-    var d=new Date(); var bln=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    return d.getDate()+' '+bln[d.getMonth()]+' '+d.getFullYear();
-  }
-
-  // Render tabel pelanggan dari DB (sumber data ikut flag CONFIG.dummy)
-  function barisPelanggan(p){
-    const chipPaket = p.paket==='PROMO' ? '<span class="nga-chip violet">PROMO</span>' : '<span class="nga-chip gray">NORMAL</span>';
-    const chipStatus = p.aktif ? '<span class="nga-chip green">AKTIF</span>' : '<span class="nga-chip red">NONAKTIF</span>';
-    const btnToggle = p.aktif
-      ? '<button class="nga-btn small ghost" data-aksi="toggle">Nonaktifkan</button>'
-      : '<button class="nga-btn small green" data-aksi="toggle">Aktifkan</button>';
-    const btnHapus = p.aktif ? '' : '<button class="nga-btn small red" data-aksi="hapus">Hapus</button>';
-    return '<tr data-wa="'+esc(p.wa)+'">'
-      + '<td style="color:#fff">'+esc(p.nama)+'</td>'
-      + '<td class="nga-muted">'+esc(p.wa)+'</td>'
-      + '<td>'+chipPaket+'</td>'
-      + '<td class="nga-muted">'+esc(p.gabung)+'</td>'
-      + '<td class="nga-muted">'+esc(p.expired)+'</td>'
-      + '<td>'+chipStatus+'</td>'
-      + '<td><div class="nga-aksi">'
-      + '<button class="nga-btn small green" data-aksi="perpanjang">Perpanjang</button>'
-      + btnToggle + btnHapus
-      + '</div></td></tr>';
-  }
-
-  async function renderPelanggan(){
-    const list = await DB.pelanggan.list();
-    const q = filterQ.toLowerCase();
-    const rows = list
-      .filter(function(p){ return !q || (p.nama+' '+p.wa).toLowerCase().indexOf(q) >= 0; })
-      .map(barisPelanggan).join('');
-    document.getElementById('ngaTabelBody').innerHTML = rows;
-    document.getElementById('ngaStatTotal').textContent = list.length;
-    document.getElementById('ngaStatAktif').textContent = list.filter(function(p){ return p.aktif; }).length;
-  }
-
-  // Delegasi klik aksi di tabel
-  document.getElementById('ngaTabelPelanggan').addEventListener('click', async function(e){
-    const btn = e.target.closest('button[data-aksi]');
-    if(!btn) return;
-    const wa = btn.closest('tr').dataset.wa;
-    const aksi = btn.dataset.aksi;
-    if(aksi==='perpanjang'){
-      ngaToast('Masa aktif <b>diperpanjang</b> (contoh)');
-    } else if(aksi==='toggle'){
-      const list = await DB.pelanggan.list();
-      const p = list.find(function(x){ return x.wa===wa; });
-      const wasAktif = p.aktif;
-      await DB.pelanggan.setAktif(wa, !wasAktif);
-      ngaToast(wasAktif ? 'Pelanggan <b>dinonaktifkan</b> (contoh)' : 'Pelanggan <b>diaktifkan</b> (contoh)');
-      renderPelanggan();
-    } else if(aksi==='hapus'){
-      await DB.pelanggan.hapus(wa);
-      ngaToast('Pelanggan <b>dihapus</b> (contoh)');
-      renderPelanggan();
-    }
-  });
-
-  // Simpan pelanggan baru via DB
-  window.ngaSimpanPelanggan = async function(){
-    const nama = document.getElementById('ngaFNama').value.trim();
-    const wa = document.getElementById('ngaFWa').value.trim();
-    const paket = document.getElementById('ngaFPaket').value;
-    const durasi = document.getElementById('ngaFDurasi').value;
-    if(!nama || !wa){ ngaToast('Isi <b>nama & WhatsApp</b> dulu bro'); return; }
-    await DB.pelanggan.tambah({
-      nama: nama, wa: wa,
-      paket: paket.indexOf('Promo')===0 ? 'PROMO' : 'NORMAL',
-      gabung: hariIni(), expired: tglExpired(durasi), aktif: true
-    });
-    document.getElementById('ngaFNama').value='';
-    document.getElementById('ngaFWa').value='';
-    ngaCloseModal();
-    ngaToast('Pelanggan <b>'+esc(nama)+'</b> ditambahkan (contoh)');
-    renderPelanggan();
-  };
-
-  // Cari pelanggan
-  window.ngaCari = function(q){ filterQ = q; renderPelanggan(); };
-
-  // Init
-  renderPelanggan();
 })();
 
 })();

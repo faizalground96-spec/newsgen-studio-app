@@ -128,6 +128,7 @@ function doGet(e) {
   // 2) API baca untuk dashboard
   var action = p.action || '', pid = p.pid || '';
   if (action === 'komentar') return json({ ok: true, rows: komentarList(pid) });
+  if (action === 'arsip')    return json({ ok: true, rows: arsipList(pid) });
   if (action === 'config')   return json({ ok: true, config: configGet(pid) });
   return json({ ok: true, pesan: 'NewsGen Studio Webhook aktif' });
 }
@@ -142,8 +143,10 @@ function doPost(e) {
   var action = data.action, pid = data.pid || '';
   if (!pid) return json({ ok: false, error: 'pid wajib' });
   if (action === 'komentar_update') return json({ ok: true, row: komentarUpdate(pid, data.id, data.patch || {}) });
+  if (action === 'komentar_hapus')  return json({ ok: true, hapus: komentarHapus(pid, data.id) });
   if (action === 'config_set')     return json({ ok: true, config: configSet(pid, data.kunci, data.nilai) });
   if (action === 'arsip')          return json({ ok: true, row: arsipTulis(pid, data.row || {}) });
+  if (action === 'pelanggan_register') return json({ ok: true, hasil: pelangganRegister(data) });
   // Fallback generik (kalau Supabase down): baca/tulis sheet milik pelanggan
   if (action === 'list')   return json({ ok: true, rows: custList(pid, data.sheet) });
   if (action === 'append') return json({ ok: true, row: custAppend(pid, data.sheet, data.row || {}) });
@@ -250,6 +253,44 @@ function arsipTulis(pid, row) {
   var d = sheetRows(sh);
   row.waktu = row.waktu || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss');
   return sheetAppendRow(sh, d.head.length ? d.head : HEAD_ARSIP, row);
+}
+
+/* ================= REGISTRASI PELANGGAN (dipakai dashboard admin) =================
+   Buatkan spreadsheet untuk pelanggan baru + daftarkan ke sheet MASTER.
+   Dipanggil: { action:'pelanggan_register', pelanggan_id, nama, page_id, nama_halaman } */
+function pelangganRegister(d) {
+  var ss = SpreadsheetApp.create('NewsGen - ' + (d.nama || d.pelanggan_id));
+  var sh = getSheet(masterSS(), 'Pelanggan', HEAD_PELANGGAN);
+  var dd = sheetRows(sh);
+  sheetAppendRow(sh, dd.head.length ? dd.head : HEAD_PELANGGAN, {
+    pelanggan_id: d.pelanggan_id || '', nama: d.nama || '',
+    page_id: d.page_id || '', nama_halaman: d.nama_halaman || '',
+    spreadsheet_id: ss.getId()
+  });
+  return { spreadsheet_id: ss.getId(), url: ss.getUrl() };
+}
+
+/* Hapus komentar (dipakai dashboard admin). */
+function komentarHapus(pid, id) {
+  var cfg = pelangganMap().byPid[String(pid)];
+  if (!cfg || !cfg.spreadsheet_id) return 0;
+  var sh = komentarSheet(cfg.spreadsheet_id);
+  var d = sheetRows(sh), n = 0;
+  for (var i = d.rows.length - 1; i >= 0; i--) {
+    if (String(d.rows[i].id) === String(id)) { sh.deleteRow(d.rows[i]._row); n++; }
+  }
+  return n;
+}
+
+/* Baca arsip (dipakai dashboard admin). */
+function arsipList(pid) {
+  var cfg = pelangganMap().byPid[String(pid)];
+  if (!cfg || !cfg.spreadsheet_id) return [];
+  var sh = custSheet(cfg.spreadsheet_id, 'Arsip', HEAD_ARSIP);
+  var d = sheetRows(sh);
+  var rows = d.rows.map(function(r){ delete r._row; return r; });
+  rows.reverse();
+  return rows.slice(0, 200);
 }
 
 /* ============ FALLBACK GENERIK (kalau Supabase down) ============ */
