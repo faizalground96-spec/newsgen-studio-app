@@ -485,6 +485,16 @@
   </div>
 </div>
 <div class="ngt-toast" id="ngtToast"></div>
+<div class="ngt-modal-bg" id="ngtConfirmBg">
+  <div class="ngt-modal">
+    <h3>Konfirmasi</h3>
+    <p id="ngtConfirmMsg" style="color:#c9c9d1;font-size:13px;margin:0 0 16px;"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="ngt-btn ghost" id="ngtConfirmNo">Batal</button>
+      <button class="ngt-btn" id="ngtConfirmYes" style="background:#e5484d;border-color:#e5484d;">Ya, lanjutkan</button>
+    </div>
+  </div>
+</div>
 <div class="ngt-modal-bg" id="ngtHalamanModalBg">
   <div class="ngt-modal">
     <h3>＋ Tambah Halaman</h3>
@@ -554,9 +564,11 @@
     }
   };
   window.ngtDoLogout = function(){
-    if(!confirm('Keluar dari dashboard?')) return;
-    ngtSetSession(null);
-    location.reload();
+    ngtConfirm('Keluar dari dashboard?', function(ya){
+      if(!ya) return;
+      ngtSetSession(null);
+      location.reload();
+    });
   };
   /* ============================================================
      KONFIGURASI DATA & BACKEND (arsitektur final 2026-10-04)
@@ -862,10 +874,13 @@
         if(CONFIG.dummy) return dummyCRUD('antrean').hapus(id);
         var row = (FB._cache || []).find(function(x){ return x.id === id; });
         if(!row || !row._token){ ngtToast('Data jadwal tidak ditemukan'); return Promise.resolve(false); }
-        if(!confirm('Batalkan jadwal ini di Facebook?')) return Promise.resolve(false);
-        return FB.hapusJadwal(row)
-          .then(function(){ ngtToast('Jadwal <b>dibatalkan</b>'); return true; })
-          .catch(function(e){ ngtToast('Gagal: ' + esc(e.message)); return false; });
+        return new Promise(function(res){ ngtConfirm('Batalkan jadwal ini di Facebook?', function(ya){ res(!!ya); }); })
+          .then(function(ya){
+            if(!ya) return false;
+            return FB.hapusJadwal(row)
+              .then(function(){ ngtToast('Jadwal <b>dibatalkan</b>'); return true; })
+              .catch(function(e){ ngtToast('Gagal: ' + esc(e.message)); return false; });
+          });
       }
     },
     draft: {
@@ -984,10 +999,12 @@
     var list = await DB.halaman.list() || [];
     var h = list.find(function(x){ return x.id===id; });
     if(!h) return;
-    if(!confirm('Hapus halaman "' + h.nama + '"?')) return;
-    await DB.halaman.hapus(id);
-    ngtToast('Halaman <b>' + esc(h.nama) + '</b> dihapus');
-    renderHalaman();
+    ngtConfirm('Hapus halaman "' + h.nama + '"?', async function(ya){
+      if(!ya) return;
+      await DB.halaman.hapus(id);
+      ngtToast('Halaman <b>' + esc(h.nama) + '</b> dihapus');
+      renderHalaman();
+    });
   };
   window.ngtUjiHalaman = async function(id){
     var list = await DB.halaman.list() || [];
@@ -1164,6 +1181,22 @@
     clearTimeout(toastT);
     toastT = setTimeout(function(){ toastEl.classList.remove('show'); }, 2600);
   };
+
+  // Confirm kustom: confirm() native diblokir di iframe sandbox (mis. Gemini Canvas)
+  var ngtConfirmCb = null;
+  window.ngtConfirm = function(pesan, cb){
+    document.getElementById('ngtConfirmMsg').textContent = pesan;
+    document.getElementById('ngtConfirmBg').classList.add('show');
+    ngtConfirmCb = cb;
+  };
+  function ngtConfirmJawab(ya){
+    document.getElementById('ngtConfirmBg').classList.remove('show');
+    var cb = ngtConfirmCb; ngtConfirmCb = null;
+    if(cb) cb(!!ya);
+  };
+  document.getElementById('ngtConfirmYes').addEventListener('click', function(){ ngtConfirmJawab(true); });
+  document.getElementById('ngtConfirmNo').addEventListener('click', function(){ ngtConfirmJawab(false); });
+  document.getElementById('ngtConfirmBg').addEventListener('click', function(e){ if(e.target===this) ngtConfirmJawab(false); });
 
   /* ===== STUDIO: 2 TAB ===== */
   window.ngtTabStudio = function(t){
@@ -1437,10 +1470,12 @@
     kmRender();
   };
   window.kmHapusRiwayat = function(){
-    if(!confirm('Hapus seluruh riwayat balasan di perangkat ini?')) return;
-    try { localStorage.removeItem(kmRiwayatKey()); } catch(e){}
-    kmRender();
-    ngtToast('Riwayat perangkat ini <b>dihapus</b>');
+    ngtConfirm('Hapus seluruh riwayat balasan di perangkat ini?', function(ya){
+      if(!ya) return;
+      try { localStorage.removeItem(kmRiwayatKey()); } catch(e){}
+      kmRender();
+      ngtToast('Riwayat perangkat ini <b>dihapus</b>');
+    });
   };
   function kmRenderRiwayat(){
     var h = kmRiwayatLoad();
@@ -1603,8 +1638,10 @@
     });
   };
   window.anHapus = function(id){
-    if(!confirm('Hapus jadwal ini?')) return;
-    DB.antrean.hapus(id).then(function(){ anMuat(); ngtToast('Jadwal <b>dihapus</b>'); });
+    ngtConfirm('Hapus jadwal ini?', function(ya){
+      if(!ya) return;
+      DB.antrean.hapus(id).then(function(){ anMuat(); ngtToast('Jadwal <b>dihapus</b>'); });
+    });
   };
   // Hapus antrean (legacy, tidak dipakai lagi)
   window.ngtHapusAntrean = function(btn){
