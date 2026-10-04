@@ -542,7 +542,7 @@
     var err = document.getElementById('login-err');
     err.style.display = 'none';
     if(!email || !pin){ err.textContent = 'Isi email dan PIN dulu.'; err.style.display = 'block'; return; }
-    function ok(p){ ngtSetSession(p); if(ngtStorageOK()){ location.reload(); } else if(window.ngtEnterApp){ window.ngtEnterApp(); } }
+    function ok(p){ ngtSetSession(p); if(window.ngtEnterApp) window.ngtEnterApp(); }
     function gagal(){ err.textContent = 'Email / PIN salah.'; err.style.display = 'block'; }
     if(CONFIG.dummy){
       var p = DUMMY_PELANGGAN.find(function(x){ return x.email === email && x.pin === pin; });
@@ -902,6 +902,8 @@
 
   // Masuk ke aplikasi (dipakai saat init & saat login tanpa reload)
   function ngtEnterApp(){
+    if(ngtEnterApp._done) return;
+    ngtEnterApp._done = true;
     document.getElementById('ngt-login').style.display = 'none';
     var appEl = document.querySelector('.ngt');
     if(appEl) appEl.style.display = '';
@@ -911,16 +913,14 @@
     try { ngtIsiHalamanSelect(); } catch(e){}
   }
   window.ngtEnterApp = ngtEnterApp;
-  // Gate: belum login -> tampilkan layar login, hentikan init
+  // Gate: belum login -> tampilkan layar login (wiring di bawah tetap dipasang)
   if(!ngtSession()){
     document.getElementById('ngt-login').style.display = 'flex';
     var appEl = document.querySelector('.ngt');
     if(appEl) appEl.style.display = 'none';
     var em = document.getElementById('login-email'), pn = document.getElementById('login-pin');
     [em, pn].forEach(function(i){ if(i) i.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.ngtDoLogin(); }); });
-    return;
   }
-  ngtEnterApp();
 
   /* ============ UI: PENGATURAN HALAMAN ============ */
   function maskToken(t){
@@ -1614,6 +1614,8 @@
 
   function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function hariIni(){ var d=new Date(); return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
+  // Init akhir: kalau sesi sudah ada (mis. reload normal), langsung masuk aplikasi
+  if(ngtSession()){ ngtEnterApp(); }
 })();
 
 })();
