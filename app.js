@@ -211,6 +211,7 @@
       <button data-target="antrean"><span class="ico">📅</span> Antrean Publish</button>
       <button data-target="komentar"><span class="ico">💬</span> Komentar</button>
       <button data-target="insight"><span class="ico">📊</span> Insight</button>
+      <button data-target="panduan"><span class="ico">📖</span> Panduan</button>
     </nav>
     <div class="ngt-side-foot">
       <div id="ngtUser" style="font-weight:700;color:#e8e8ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
@@ -411,6 +412,19 @@
             <div><div style="display:flex;justify-content:space-between;font-size:14px"><b style="color:#fff">Jembatan Baru Cilacap Dibuka</b><span class="ngt-muted">18rb reach</span></div><div class="ngt-bar"><i style="width:38%"></i></div></div>
           </div>
         </div>
+      </section>
+
+      <!-- PANDUAN -->
+      <section class="ngt-page" id="page-panduan">
+        <div class="ngt-title">Panduan Setup</div>
+        <div class="ngt-desc">Panduan menyiapkan Web App & aplikasi Meta milikmu. Bisa diunduh dan dibaca offline.</div>
+        <div class="ngt-card" style="margin-bottom:14px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+            <div><b style="color:#fff;font-size:14px">📖 Panduan Setup NewsGen Studio</b><div class="ngt-muted">3 bagian: Google → Meta → NewsGen (±20 menit)</div></div>
+            <button class="ngt-btn" onclick="ngtUnduhPanduan()">📥 Download Panduan</button>
+          </div>
+        </div>
+        <div class="ngt-card"><div class="ngt-panduan" id="ngtPanduanIsi"></div></div>
       </section>
 
       <!-- PENGATURAN -->
@@ -1017,10 +1031,62 @@
   (function(){ var s = ngtSession(); var el = document.getElementById('ngtUser'); if(el && s) el.textContent = s.nama; })();
   initSetting();
   ngtIsiHalamanSelect();
-  var titles = { pengaturan:'Setting', radar:'News Aggregator', studio:'Studio Konten', antrean:'Antrean Publish', komentar:'Komentar', insight:'Insight' };
+  var titles = { pengaturan:'Setting', radar:'News Aggregator', studio:'Studio Konten', antrean:'Antrean Publish', komentar:'Komentar', insight:'Insight', panduan:'Panduan' };
+
+  /* ============ PANDUAN ============ */
+  var NGT_PANDUAN_MD = "# Panduan Setup NewsGen Studio (untuk Pelanggan)\n\nAgar komentar Facebook masuk otomatis dan bisa dibalas dari dashboard,\npelanggan menyiapkan 2 hal milik sendiri: **Web App (Google)** dan\n**Aplikasi Meta (Facebook)**. Ikuti langkahnya berurutan \u2014 sekitar 20 menit.\n\nSiapkan dulu 3 catatan kecil (ditulis di kertas/notepad):\n- `KODE_WEBHOOK`: buat kode rahasia sendiri, mis. `toko-saya-123`\n- `URL_WEBAPP`: (diisi nanti di Bagian A)\n- `PAGE_ID`, `TOKEN`: (diisi nanti di Bagian B)\n\n---\n\n## Bagian A \u2014 Web App di Google (10 menit)\n\n1. Buka **Google Drive** \u2192 **New** \u2192 **Google Sheets**. Beri nama mis.\n   `NewsGen - NamaUsahaSaya`.\n2. Di spreadsheet itu klik **Extensions** \u2192 **Apps Script**.\n3. Di editor, hapus semua isi file `Code.gs`.\n4. Buka link ini di tab baru, salin **seluruh** isinya:\n   https://raw.githubusercontent.com/faizalground96-spec/newsgen-studio-app/main/apps-script.gs\n5. Tempel ke `Code.gs` \u2192 **Save** (ikon disket / Ctrl+S).\n6. Klik ikon **gerigi** (Project Settings) \u2192 bagian **Script Properties** \u2192\n   **Add script property**:\n   - Property: `FB_VERIFY_TOKEN`\n   - Value: `KODE_WEBHOOK` buatanmu tadi\n   \u2192 **Save script properties**.\n7. Klik **Deploy** \u2192 **New deployment** \u2192 ikon gerigi \u2192 pilih **Web app**:\n   - Execute as: **Me**\n   - Who has access: **Anyone**\n   \u2192 **Deploy** \u2192 **Authorize access** (ikuti sampai selesai).\n8. **Salin URL Web App** yang muncul (bentuknya\n   `https://script.google.com/macros/s/\u2026/exec`). Ini adalah `URL_WEBAPP`.\n   \u2705 Bagian A selesai \u2014 tidak perlu isi apa pun lagi di spreadsheet.\n\n## Bagian B \u2014 Aplikasi di Meta Developer (10 menit)\n\n1. Buka https://developers.facebook.com \u2192 login \u2192 **My Apps** \u2192\n   **Create App**. Pilih tipe **Business**, isi nama, buat.\n2. Di dashboard aplikasi, cari produk **Webhooks** \u2192 **Add**/**Set up**.\n3. Pilih objek **Page** \u2192 **Subscribe**, isi:\n   - Callback URL: `URL_WEBAPP` dari Bagian A\n   - Verify Token: `KODE_WEBHOOK` buatanmu\n   \u2192 **Verify and Save**. Di bagian **Subscription Fields**, centang **feed**.\n4. Dapatkan **Page ID**: buka halaman Facebook-mu \u2192 **Settings** \u2192\n   **Page info** (atau: `https://www.facebook.com/<nama-halaman>/about`) \u2014\n   catat angka Page ID.\n5. Dapatkan **Akses Token**:\n   - Buka https://developers.facebook.com/tools/explorer\n   - Pilih aplikasimu, klik **Generate Access Token**, login dengan akun\n     yang menjadi **admin halaman**\n   - Tambahkan permission: `pages_read_engagement`, `pages_manage_posts`\n   - Klik ikon info di token \u2192 **Open in Access Token Tool** \u2192\n     **Extend Access Token** (agar tidak cepat kedaluwarsa) \u2192 salin token\n     yang panjang itu. Ini adalah `TOKEN`.\n   - \u26a0\ufe0f Token ini rahasia \u2014 jangan disebar.\n6. Supaya halamanmu terhubung ke aplikasi: di **App Dashboard** \u2192\n   **Webhooks** \u2192 **Page** \u2192 **Add Subscription** untuk halamanmu\n   (atau lewat pengaturan halaman \u2192 Linked apps, tergantung tampilan Meta).\n\n## Bagian C \u2014 Masukkan ke NewsGen (3 menit)\n\n1. Login ke aplikasi NewsGen Studio.\n2. Buka menu **Setting** \u2192 bagian **\ud83d\udd17 Web App Pribadi**:\n   tempel `URL_WEBAPP` \u2192 **Simpan** \u2192 **Tes Koneksi**\n   (harus muncul \"Web App aktif \u2713\").\n3. Masih di **Setting** \u2192 **\ud83d\udcc4 Pengaturan Halaman** \u2192 **\uff0b Tambah Halaman**:\n   - Nama Halaman: nama halamanmu\n   - Page ID: `PAGE_ID`\n   - Akses Token: `TOKEN`\n   - Kode Webhook: `KODE_WEBHOOK`\n   \u2192 **Simpan**.\n4. Buka menu **Komentar** \u2192 nyalakan **Auto-Polling**.\n   Setiap ada komentar baru di halaman Facebook-mu, akan muncul di sini\n   dan bisa dibalas. \ud83c\udf89\n\n---\n\n## Kalau ada masalah\n\n| Gejala | Periksa |\n|---|---|\n| Tes Koneksi gagal | URL Web App disalin lengkap? Deploy-nya \"Who has access: Anyone\"? |\n| Komentar tidak masuk | Di Meta \u2192 Webhooks \u2192 Page: status subscribe hijau? Field `feed` dicentang? Verify Token sama dengan `FB_VERIFY_TOKEN`? |\n| Gagal simpan halaman | Page ID angka semua? Token tidak terpotong saat disalin? |\n| Token tiba-tiba tidak jalan | Token kedaluwarsa \u2014 buat ulang di Bagian B langkah 5 |\n\nButuh bantuan? Hubungi admin via WhatsApp yang tertera di halaman penjualan.\n";
+  function ngtMd2Html(md){
+    var lines = md.split('\n'), html = '', inList = null, inTable = false;
+    function inline(s){
+      s = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      s = s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+      s = s.replace(/`([^`]+)`/g,'<code>$1</code>');
+      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+      return s;
+    }
+    function closeList(){ if(inList){ html += inList==='ol' ? '</ol>' : '</ul>'; inList = null; } }
+    lines.forEach(function(ln){
+      var t = ln.trim();
+      if(/^\|.*\|$/.test(t)){
+        closeList();
+        var cells = t.split('|').slice(1,-1).map(function(c){ return inline(c.trim()); });
+        if(/^-+$/.test(cells[0].replace(/<[^>]+>/g,''))){ return; }
+        if(!inTable){ html += '<table class="ngt-ptable">'; inTable = true; }
+        html += '<tr>' + cells.map(function(c){ return '<td>'+c+'</td>'; }).join('') + '</tr>';
+        return;
+      }
+      if(inTable){ html += '</table>'; inTable = false; }
+      if(/^---+$/.test(t)){ closeList(); html += '<hr>'; return; }
+      if(/^## /.test(t)){ closeList(); html += '<h3>'+inline(t.slice(3))+'</h3>'; return; }
+      if(/^# /.test(t)){ closeList(); html += '<h2>'+inline(t.slice(2))+'</h2>'; return; }
+      var mNum = t.match(/^(\d+)\.\s+(.*)/);
+      if(mNum){ if(inList!=='ol'){ closeList(); html += '<ol>'; inList='ol'; } html += '<li>'+inline(mNum[2])+'</li>'; return; }
+      if(/^-\s+/.test(t)){ if(inList!=='ul'){ closeList(); html += '<ul>'; inList='ul'; } html += '<li>'+inline(t.slice(2))+'</li>'; return; }
+      closeList();
+      if(!t) return;
+      html += '<p>'+inline(t)+'</p>';
+    });
+    closeList();
+    if(inTable) html += '</table>';
+    return html;
+  }
+  window.ngtUnduhPanduan = function(){
+    var blob = new Blob([NGT_PANDUAN_MD], { type:'text/markdown;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'panduan-setup-newsgen-studio.md';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    ngtToast('Panduan <b>diunduh</b>');
+  };
+  function ngtRenderPanduan(){
+    var el = document.getElementById('ngtPanduanIsi');
+    if(el && !el.dataset.done){ el.innerHTML = ngtMd2Html(NGT_PANDUAN_MD); el.dataset.done = '1'; }
+  }
 
   // Navigasi sidebar
   function goPage(name){
+    if(name==='panduan') ngtRenderPanduan();
     if(name==='komentar') kmLoad();
     if(name==='antrean') anMuat();
     document.querySelectorAll('#ngtNav button').forEach(function(b){ b.classList.toggle('active', b.dataset.target===name); });

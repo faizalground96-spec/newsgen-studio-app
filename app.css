@@ -159,3 +159,18 @@
   .ngt-opt:hover { border-color:#7c3aed; }
   .ngt-opt.sel { border-color:#7c3aed; background:rgba(124,58,237,.12); }
   .ngt-wiznav { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+
+/* ============ PANDUAN ============ */
+.ngt-panduan{color:#d4d4d8;font-size:14px;line-height:1.7}
+.ngt-panduan h2{color:#fff;font-size:20px;margin:22px 0 10px}
+.ngt-panduan h2:first-child{margin-top:0}
+.ngt-panduan h3{color:#fff;font-size:16px;margin:18px 0 8px}
+.ngt-panduan p{margin:8px 0}
+.ngt-panduan ol,.ngt-panduan ul{margin:8px 0;padding-left:22px}
+.ngt-panduan li{margin:5px 0}
+.ngt-panduan code{background:#1b1b1f;border:1px solid #2c2c33;border-radius:6px;padding:1px 7px;font-size:12.5px;color:#c4b5fd;word-break:break-all}
+.ngt-panduan a{color:#8b5cf6;word-break:break-all}
+.ngt-panduan hr{border:none;border-top:1px solid #2c2c33;margin:20px 0}
+table.ngt-ptable{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+table.ngt-ptable td{border:1px solid #2c2c33;padding:8px 10px;vertical-align:top}
+table.ngt-ptable tr:first-child td{background:#1b1b1f;color:#fff;font-weight:700}
