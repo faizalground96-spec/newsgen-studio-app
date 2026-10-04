@@ -423,7 +423,7 @@
             <h3 style="margin:0">📄 Pengaturan Halaman</h3>
             <button class="ngt-btn small" onclick="ngtOpenHalamanModal()">＋ Tambah Halaman</button>
           </div>
-          <p class="ngt-muted" style="margin:0 0 12px">Daftar halaman Facebook yang terhubung ke NewsGen Studio.</p>
+          <p class="ngt-muted" style="margin:0 0 12px">Daftar halaman Facebook yang terhubung ke NewsGen Studio.<br><span id="ngtHalamanInfo"></span></p>
           <div class="ngt-list" id="ngtHalamanList"></div>
         </div>
 
@@ -473,6 +473,17 @@
     </div>
   </div>
 </div>
+<div class="ngt-modal-bg" id="ngtUpsellModalBg">
+  <div class="ngt-modal" style="text-align:center">
+    <div style="font-size:44px;margin-bottom:8px">&#128176;</div>
+    <h3>Batas Halaman Tercapai</h3>
+    <p class="ngt-muted" style="margin:10px 0 18px">Paketmu mencakup <b style="color:#fff">3 halaman</b>.<br>Tambah <b style="color:#fff">1 halaman</b> lagi cuma <b style="color:#4ade80">Rp80.000</b>.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="ngt-btn ghost" onclick="ngtTutupUpsell()">Nanti Saja</button>
+      <a class="ngt-btn" style="background:#22c55e;text-decoration:none" id="ngtUpsellWa" href="#" target="_blank" rel="noopener">&#128222; Hubungi Admin</a>
+    </div>
+  </div>
+</div>
 `;
 
 (function(){
@@ -485,7 +496,7 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url }));
+    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) }));
     else sessionStorage.removeItem('ngt_session');
   }
   window.ngtDoLogin = function(){
@@ -694,7 +705,7 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url }));
+    if(p) sessionStorage.setItem('ngt_session', JSON.stringify({ id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) }));
     else sessionStorage.removeItem('ngt_session');
   }
 
@@ -860,6 +871,9 @@
   async function renderHalaman(){
     var list = await DB.halaman.list() || [];
     var el = document.getElementById('ngtHalamanList');
+    var info = document.getElementById('ngtHalamanInfo');
+    if(info) info.innerHTML = '<b style="color:#fff">' + list.length + '</b>/' + ngtMaxHalaman() + ' halaman terpakai' +
+      (list.length >= ngtMaxHalaman() ? ' &mdash; <a href="#" onclick="ngtBukaUpsell();return false;" style="color:#8b5cf6">tambah halaman Rp80rb</a>' : '');
     if(!list.length){
       el.innerHTML = '<p class="ngt-muted">Belum ada halaman terhubung. Klik &ldquo;&#65291; Tambah Halaman&rdquo;.</p>';
       return;
@@ -877,7 +891,25 @@
   }
   window.ngtOpenHalamanModal = function(){ document.getElementById('ngtHalamanModalBg').classList.add('show'); };
   window.ngtCloseHalamanModal = function(){ document.getElementById('ngtHalamanModalBg').classList.remove('show'); };
+  function ngtMaxHalaman(){
+    var s = ngtSession();
+    var m = s ? parseInt(s.max_halaman, 10) : NaN;
+    return isNaN(m) ? 3 : m;
+  }
+  window.ngtBukaUpsell = function(){
+    ngtCloseHalamanModal();
+    var s = ngtSession();
+    var teks = 'Halo admin, saya mau tambah 1 halaman Facebook (Rp80.000). Akun: ' + (s ? s.email : '');
+    document.getElementById('ngtUpsellWa').href = 'https://wa.me/6280000000000?text=' + encodeURIComponent(teks);
+    document.getElementById('ngtUpsellModalBg').classList.add('show');
+  };
+  window.ngtTutupUpsell = function(){ document.getElementById('ngtUpsellModalBg').classList.remove('show'); };
   window.ngtSimpanHalaman = async function(){
+    var sudah = await DB.halaman.list() || [];
+    if(sudah.length >= ngtMaxHalaman()){
+      ngtBukaUpsell();
+      return;
+    }
     var nama = document.getElementById('ngtHNama').value.trim();
     var pageId = document.getElementById('ngtHPageId').value.trim();
     var token = document.getElementById('ngtHToken').value.trim();

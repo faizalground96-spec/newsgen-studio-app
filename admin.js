@@ -397,6 +397,7 @@
       '<div class="nga-field"><label class="nga-label">Paket</label><select class="nga-select" id="mPaket"><option>PROMO</option><option>NORMAL</option><option>REGULER</option></select></div>' +
       '<div class="nga-field"><label class="nga-label">Model AI</label><select class="nga-select" id="mModel"><option>gemini-2.5-flash</option><option>gemini-2.5-pro</option><option>gpt-4o-mini</option><option>gpt-4o</option></select></div>' +
       '<div class="nga-field"><label class="nga-label">Web App URL (opsional)</label><input class="nga-input" id="mWebapp" placeholder="Kosongkan = pakai utama"></div>' +
+      '<div class="nga-field"><label class="nga-label">Maks. Halaman</label><input class="nga-input" id="mMaxHalaman" type="number" min="1" max="50" value="3"></div>' +
       '</div>' +
       '<p class="nga-muted" style="margin:10px 0">Sistem otomatis: buatkan spreadsheet pelanggan + daftarkan ke Web App.</p>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="nga-btn ghost" onclick="ngaCloseModal()">Batal</button><button class="nga-btn" onclick="pelangganSimpanBaru()">Simpan</button></div>'
@@ -411,7 +412,8 @@
     var p = { id: id, nama: nama, email: email, pin: pin,
       paket: document.getElementById('mPaket').value,
       model: document.getElementById('mModel').value, apiKey: '',
-      webapp_url: document.getElementById('mWebapp').value.trim(), aktif: true };
+      webapp_url: document.getElementById('mWebapp').value.trim(), aktif: true,
+      max_halaman: parseInt(document.getElementById('mMaxHalaman').value, 10) || 3 };
     try {
       await DB.pelanggan.tambah(p);
       // Daftarkan ke Web App: buatkan spreadsheet + mapping
@@ -462,6 +464,7 @@
       '</div>' +
       '<div class="nga-field"><label class="nga-label">Web App URL (akun Google pelaksana)</label><input class="nga-input" id="dWebapp" value="' + esc(p.webapp_url || '') + '" placeholder="Kosongkan = pakai Web App utama"></div>' +
       '<div class="nga-field"><label class="nga-label">Status</label><select class="nga-select" id="dAktif"><option value="1"' + (p.aktif !== false ? ' selected' : '') + '>Aktif</option><option value="0"' + (p.aktif === false ? ' selected' : '') + '>Nonaktif</option></select></div>' +
+      '<div class="nga-field"><label class="nga-label">Maks. Halaman FB</label><input class="nga-input" id="dMaxHalaman" type="number" min="1" max="50" value="' + (p.max_halaman === undefined || p.max_halaman === null ? 3 : p.max_halaman) + '"><p class="nga-muted" style="margin-top:6px">Standar 3. Tambah 1 halaman = Rp80.000.</p></div>' +
       '<button class="nga-btn" onclick="akunSimpan()">&#128190; Simpan Perubahan</button></div>' +
       '<div class="nga-card" style="max-width:640px;border-color:rgba(239,68,68,.35)"><h3 style="color:#fca5a5">&#9888; Zona Berbahaya</h3>' +
       '<p class="nga-muted" style="margin-bottom:12px">Menghapus akun + seluruh halaman FB-nya dari Supabase. Spreadsheet miliknya tidak ikut terhapus.</p>' +
@@ -477,7 +480,8 @@
       model: document.getElementById('dModel').value,
       apiKey: document.getElementById('dApiKey').value.trim(),
       webapp_url: document.getElementById('dWebapp').value.trim(),
-      aktif: document.getElementById('dAktif').value === '1'
+      aktif: document.getElementById('dAktif').value === '1',
+      max_halaman: parseInt(document.getElementById('dMaxHalaman').value, 10) || 3
     };
     if(!patch.nama || !patch.email || !patch.pin){ ngaToast('Nama, email, PIN wajib diisi'); return; }
     try {
