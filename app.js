@@ -320,9 +320,35 @@
           <div class="ngt-studio">
             <div class="ngt-card">
               <h3>&#127912; Kartu Visual</h3>
-              <p class="ngt-muted" style="margin-top:-8px;">Judul terpilih otomatis tampil di kartu. Ukuran 1080&times;1350.</p>
+              <p class="ngt-muted" style="margin-top:-8px;">Desain per halaman — tersimpan otomatis per tab. Ekspor 1080&times;1350 (render 2x).</p>
+              <div class="ngt-field"><label class="ngt-label">Gambar latar</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button class="ngt-btn ghost small" onclick="aiImgUpload()">&#128228; Upload</button>
+                  <button class="ngt-btn ghost small" onclick="aiImgUrl()">&#128279; URL</button>
+                  <button class="ngt-btn ghost small" id="aiImgAiBtn" onclick="aiImgAi()">&#10024; Gambar AI</button>
+                  <button class="ngt-btn ghost small" onclick="aiImgHapus()">&#128465;</button>
+                </div>
+                <input type="file" id="aiImgFile" accept="image/*" style="display:none" onchange="aiImgFileDipilih(this)">
+                <p class="ngt-muted" style="margin:8px 0 0">Geser gambar langsung di preview. Zoom:
+                  <input type="range" id="aiZoom" min="0.5" max="3" step="0.1" value="1" style="width:110px;vertical-align:middle" oninput="aiSetZoom(this.value)">
+                  <b id="aiZoomVal">100%</b></p>
+              </div>
+              <div class="ngt-field"><label class="ngt-label">Layout</label>
+                <div class="ngt-jenis" id="aiLayout">
+                  <button class="active" data-l="classic" onclick="aiSetLayout('classic',this)">Klasik</button><button data-l="centered" onclick="aiSetLayout('centered',this)">Tengah</button><button data-l="top-banner" onclick="aiSetLayout('top-banner',this)">Banner Atas</button><button data-l="no-photo" onclick="aiSetLayout('no-photo',this)">Tanpa Foto</button>
+                </div></div>
+              <div class="ngt-field"><label class="ngt-label">Warna aksen</label>
+                <div class="ngt-jenis" id="aiWarna"></div></div>
+              <div class="ngt-field"><label class="ngt-label">Font</label>
+                <div class="ngt-jenis" id="aiFont">
+                  <button class="active" data-f="modern" onclick="aiSetFont('modern',this)">Modern</button><button data-f="serif" onclick="aiSetFont('serif',this)">Elegan</button><button data-f="impact" onclick="aiSetFont('impact',this)">Impact</button>
+                </div></div>
+              <div class="ngt-field"><label class="ngt-label">Ukuran judul</label>
+                <input type="range" id="aiTitleSize" min="48" max="110" step="2" value="72" style="width:100%" oninput="aiSetTitleSize(this.value)">
+              </div>
               <div class="ngt-wiznav" style="margin-top:0;margin-bottom:14px;">
                 <button class="ngt-btn ghost" onclick="aiDownload()">&#11015; Download PNG</button>
+                <button class="ngt-btn ghost" onclick="aiDownloadSemua()">&#11015; Semua Halaman</button>
               </div>
               <div class="ngt-field"><label class="ngt-label">Terbitkan ke</label>
                 <div style="display:flex;gap:16px;flex-wrap:wrap" id="ngtPlatAi">
@@ -342,7 +368,8 @@
             </div>
             <div class="ngt-card">
               <h3>&#128444;&#65039; Preview Kartu (1080&times;1350)</h3>
-              <div class="ngt-preview-card" id="aiPreview"><div class="ph">Preview muncul<br>setelah Generate</div></div>
+              <div id="aiPreviewWrap" title="Geser untuk atur posisi gambar"><img id="aiPreviewImg" alt="Preview kartu"></div>
+              <p class="ngt-muted" style="text-align:center;margin:8px 0 0">Geser gambar di atas untuk atur posisi &bull; tempel gambar dari clipboard juga bisa</p>
             </div>
           </div>
         </div>
@@ -1553,7 +1580,7 @@
     if(n === 3 && (!sNow || !sNow.headline)){
       ngtToast('Generate dulu & <b>pilih judul</b> di langkah Kurasi'); return;
     }
-    if(n === 3){ aiRenderSets(); aiRenderPreview(); }
+    if(n === 3){ aiRenderSets(); aiSinkronKontrolKartu(); aiRenderPreview(); }
     aiW.step = n;
     [1,2,3].forEach(function(i){
       document.getElementById('aiStep'+i).style.display = (i===n) ? '' : 'none';
@@ -1632,7 +1659,7 @@
     aiRenderSetAktif();
   }
   window.aiPilihSet = function(i){ aiSimpanSetAktif(); aiW.activeSet = i; aiRenderSets(); };
-  window.aiPilihSet3 = function(i){ aiW.activeSet = i; aiRenderSets(); aiRenderPreview(); };
+  window.aiPilihSet3 = function(i){ aiW.activeSet = i; aiRenderSets(); aiSinkronKontrolKartu(); aiRenderPreview(); };
   function aiOptsHtml(list, terpilih, fn){
     if(!list.length) return '<p class="ngt-muted">Tidak ada opsi.</p>';
     return list.map(function(t, i){
@@ -1650,12 +1677,337 @@
   window.aiPilihJudulSet = function(i){ var s = aiSetAktif(); if(s){ s.headline = s.headlines[i]; aiW.judul = s.headline; aiRenderSetAktif(); } };
   window.aiPilihDescSet = function(i){ var s = aiSetAktif(); if(s){ s.desc = s.descs[i]; aiRenderSetAktif(); } };
   window.aiPilihHookSet = function(i){ var s = aiSetAktif(); if(s){ s.hook = s.hooks[i]; aiRenderSetAktif(); } };
-  function aiRenderPreview(){
-    var s = aiSetAktif();
-    document.getElementById('aiPreview').innerHTML =
-      '<div class="kicker">NEWSGEN STUDIO</div><h4>' + esc((s && s.headline) || '') + '</h4>' +
-      '<div class="src">' + esc((s && s.nama) || '') + ' &bull; ' + hariIni() + '</div>';
+  // ============ EDITOR KARTU VISUAL ============
+  var AI_COLORS = {
+    amber:{hex:'#f59e0b',label:'Amber'}, cyan:{hex:'#06b6d4',label:'Cyan'},
+    violet:{hex:'#8b5cf6',label:'Violet'}, rose:{hex:'#f43f5e',label:'Rose'},
+    red:{hex:'#ef4444',label:'Merah'}, lime:{hex:'#84cc16',label:'Lime'}
+  };
+  var AI_FONT_FAM = { modern:'"DM Sans"', serif:'"Cormorant Garamond"', impact:'"Barlow Condensed"' };
+  var aiCard = { img:null, imgAspect:1, pos:{x:0,y:0}, scale:1 };
+  var _aiImgCache = { src:null, img:null };
+
+  function aiDesign(){
+    var s = aiSetAktif(); if(!s) return null;
+    if(!s.design) s.design = { color:'amber', layout:'classic', font:'modern', titleSize:72 };
+    return s.design;
   }
+  function aiPastikanFont(){
+    if(document.getElementById('aiFontLink')) return;
+    var l = document.createElement('link'); l.id = 'aiFontLink'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&family=Cormorant+Garamond:wght@400;600;700;900&family=Barlow+Condensed:wght@400;600;700;800;900&display=swap';
+    document.head.appendChild(l);
+  }
+  function aiMuatGambar(src){
+    if(_aiImgCache.src === src && _aiImgCache.img) return Promise.resolve(_aiImgCache.img);
+    return new Promise(function(res, rej){
+      var img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = function(){ _aiImgCache = { src:src, img:img }; res(img); };
+      img.onerror = function(){ rej(new Error('Gambar tidak bisa dimuat')); };
+      img.src = src;
+    });
+  }
+  // Render kartu ke canvas. mult: 0.25 = preview, 2 = ekspor HD
+  async function aiGambarKartu(s, mult){
+    var d = s.design || { color:'amber', layout:'classic', font:'modern', titleSize:72 };
+    var W = 1080, H = 1350, pad = 80;
+    var cv = document.createElement('canvas'); cv.width = Math.round(W*mult); cv.height = Math.round(H*mult);
+    var ctx = cv.getContext('2d'); ctx.scale(mult, mult);
+    var accent = (AI_COLORS[d.color] || AI_COLORS.amber).hex;
+    var fontFam = AI_FONT_FAM[d.font] || AI_FONT_FAM.modern;
+    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, W, H);
+    // Gambar latar (cover + posisi + zoom)
+    if(d.layout !== 'no-photo' && aiCard.img){
+      var img = await aiMuatGambar(aiCard.img);
+      var ia = img.width / img.height, ca = W / H, rW, rH;
+      if(ia > ca){ rH = H; rW = H * ia; } else { rW = W; rH = W / ia; }
+      var ratio = W / 270;
+      ctx.save();
+      ctx.translate(W/2, H/2);
+      ctx.translate(aiCard.pos.x * ratio, aiCard.pos.y * ratio);
+      ctx.scale(aiCard.scale, aiCard.scale);
+      try { ctx.drawImage(img, -rW/2, -rH/2, rW, rH); } catch(e){}
+      ctx.restore();
+    }
+    // Gradient overlay per layout
+    var grad = ctx.createLinearGradient(0, 0, 0, H);
+    if(d.layout === 'no-photo'){ grad.addColorStop(0, '#0a0a0a'); grad.addColorStop(1, accent + '40'); }
+    else if(d.layout === 'top-banner'){ grad.addColorStop(0, 'rgba(0,0,0,0.95)'); grad.addColorStop(0.4, 'rgba(0,0,0,0.4)'); grad.addColorStop(1, 'rgba(0,0,0,0.05)'); }
+    else if(d.layout === 'centered'){ grad.addColorStop(0, 'rgba(0,0,0,0.4)'); grad.addColorStop(0.5, 'rgba(0,0,0,0.85)'); grad.addColorStop(1, 'rgba(0,0,0,0.4)'); }
+    else { grad.addColorStop(0, 'rgba(0,0,0,0.05)'); grad.addColorStop(0.35, 'rgba(0,0,0,0.3)'); grad.addColorStop(0.65, 'rgba(0,0,0,0.85)'); grad.addColorStop(1, 'rgba(0,0,0,0.97)'); }
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    // Watermark anti-maling (nama halaman, diagonal)
+    ctx.save();
+    ctx.translate(W/2, H/2); ctx.rotate(-Math.PI/6);
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var cleanMedia = String(s.nama || '').replace('.id', '').toUpperCase();
+    var fs = 140;
+    ctx.font = '900 ' + fs + 'px "DM Sans", sans-serif';
+    var maxW = Math.sqrt(W*W + H*H) * 0.7;
+    try {
+      var twm = ctx.measureText(cleanMedia).width;
+      if(twm > maxW){ fs = Math.floor(fs * (maxW / twm)); ctx.font = '900 ' + fs + 'px "DM Sans", sans-serif'; }
+      if(cleanMedia) ctx.fillText(cleanMedia, 0, 0);
+    } catch(e){}
+    ctx.restore();
+    // Bungkus teks
+    function wrapText(text, maxWpx, size, weight){
+      ctx.font = weight + ' ' + size + 'px ' + fontFam + ', sans-serif';
+      var words = String(text || '').split(' '), lines = [], line = '';
+      words.forEach(function(word){
+        var test = line + word + ' ';
+        if(ctx.measureText(test).width > maxWpx && line){ lines.push(line.trim()); line = word + ' '; }
+        else line = test;
+      });
+      if(line.trim()) lines.push(line.trim());
+      return lines;
+    }
+    var tw = W - pad * 2;
+    var dynamicTitleSize = d.titleSize, hlLen = (s.headline || '').length;
+    if(hlLen > 250) dynamicTitleSize *= 0.5;
+    else if(hlLen > 200) dynamicTitleSize *= 0.6;
+    else if(hlLen > 150) dynamicTitleSize *= 0.7;
+    else if(hlLen > 120) dynamicTitleSize *= 0.8;
+    else if(hlLen > 90) dynamicTitleSize *= 0.9;
+    else if(hlLen > 70) dynamicTitleSize *= 0.95;
+    var hLines = wrapText(s.headline || 'Judul Berita', tw, Math.round(dynamicTitleSize), '900');
+    var hLH = dynamicTitleSize * 1.08, hH = hLines.length * hLH;
+    var dSize = 42, dLines = wrapText(s.desc || '', tw, dSize, '500');
+    if(dLines.length > 4) dLines = dLines.slice(0, 4);
+    var dLH = dSize * 1.55, dH = (d.layout === 'top-banner') ? 0 : dLines.length * dLH;
+    var barH = 14, barW = 180, gap = 50, footerH = 140, hStartY, barY, dStartY;
+    if(d.layout === 'centered' || d.layout === 'no-photo'){
+      var totalH = hH + gap + barH + gap + dH;
+      hStartY = (H - totalH) / 2 - 50; barY = hStartY + hH + gap; dStartY = barY + barH + gap;
+    } else if(d.layout === 'top-banner'){ hStartY = 120; barY = hStartY + hH + gap; dStartY = 0; }
+    else { hStartY = H - footerH - dH - gap - barH - gap - hH; barY = hStartY + hH + gap; dStartY = barY + barH + gap; }
+    // Judul
+    ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#ffffff'; ctx.font = '900 ' + Math.round(dynamicTitleSize) + 'px ' + fontFam + ', sans-serif';
+    var cy = hStartY;
+    hLines.forEach(function(line){ ctx.fillText(line, pad, cy); cy += hLH; });
+    // Bar aksen
+    ctx.shadowBlur = 12; ctx.fillStyle = accent;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(pad, barY, barW, barH, barH/2); else ctx.rect(pad, barY, barW, barH);
+    ctx.fill();
+    // Deskripsi
+    if(d.layout !== 'top-banner' && dLines.length){
+      ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(220,220,220,0.88)';
+      ctx.font = '500 ' + dSize + 'px ' + fontFam + ', sans-serif';
+      cy = dStartY;
+      dLines.forEach(function(line){ ctx.fillText(line, pad, cy); cy += dLH; });
+    }
+    // Footer
+    ctx.shadowBlur = 0; ctx.shadowColor = 'transparent'; ctx.shadowOffsetY = 0;
+    var lineY = H - footerH;
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(pad, lineY, tw, 2);
+    ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
+    ctx.font = '700 28px ' + fontFam + ', sans-serif'; ctx.fillStyle = '#9ca3af';
+    try { ctx.fillText(cleanMedia, pad, H - 52); } catch(e){}
+    ctx.fillStyle = accent; ctx.textAlign = 'right';
+    ctx.font = '800 28px ' + fontFam + ', sans-serif';
+    try { ctx.fillText('CEK DESKRIPSI \u2193', W - pad, H - 52); } catch(e){}
+    // Bingkai dekoratif
+    ctx.save();
+    var fInset = 28;
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 3;
+    ctx.strokeRect(fInset + 1.5, fInset + 1.5, W - fInset*2 - 3, H - fInset*2 - 3);
+    var cLen = 90, cThk = 5;
+    ctx.strokeStyle = accent; ctx.lineWidth = cThk;
+    ctx.beginPath(); ctx.moveTo(fInset, fInset + cLen); ctx.lineTo(fInset, fInset); ctx.lineTo(fInset + cLen, fInset); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W - fInset - cLen, fInset); ctx.lineTo(W - fInset, fInset); ctx.lineTo(W - fInset, fInset + cLen); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fInset, H - fInset - cLen); ctx.lineTo(fInset, H - fInset); ctx.lineTo(fInset + cLen, H - fInset); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W - fInset - cLen, H - fInset); ctx.lineTo(W - fInset, H - fInset); ctx.lineTo(W - fInset, H - fInset - cLen); ctx.stroke();
+    var stripe = ctx.createLinearGradient(0, 0, W, 0);
+    stripe.addColorStop(0, 'transparent'); stripe.addColorStop(0.15, accent + 'cc');
+    stripe.addColorStop(0.85, accent + 'cc'); stripe.addColorStop(1, 'transparent');
+    ctx.fillStyle = stripe; ctx.fillRect(0, 0, W, 7);
+    ctx.restore();
+    return cv;
+  }
+  // Preview (render 0.25x, debounce)
+  var _aiPrevT = null;
+  function aiRenderPreview(){
+    var s = aiSetAktif(); if(!s) return;
+    aiPastikanFont(); aiInitDrag();
+    var img = document.getElementById('aiPreviewImg'); if(!img) return;
+    clearTimeout(_aiPrevT);
+    _aiPrevT = setTimeout(function(){
+      aiGambarKartu(s, 0.25).then(function(cv){ img.src = cv.toDataURL('image/png'); }).catch(function(){});
+    }, 150);
+  }
+  // Drag geser gambar di preview
+  function aiInitDrag(){
+    var wrap = document.getElementById('aiPreviewWrap'); if(!wrap || wrap._aiDrag) return; wrap._aiDrag = true;
+    var dragging = false, sx = 0, sy = 0, ox = 0, oy = 0, raf = 0;
+    wrap.addEventListener('pointerdown', function(e){
+      if(!aiCard.img) return;
+      dragging = true; sx = e.clientX; sy = e.clientY; ox = aiCard.pos.x; oy = aiCard.pos.y;
+      try { wrap.setPointerCapture(e.pointerId); } catch(err){}
+    });
+    wrap.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      aiCard.pos.x = ox + (e.clientX - sx); aiCard.pos.y = oy + (e.clientY - sy);
+      if(!raf) raf = requestAnimationFrame(function(){ raf = 0; aiRenderPreview(); });
+    });
+    wrap.addEventListener('pointerup', function(){ dragging = false; });
+    wrap.addEventListener('pointercancel', function(){ dragging = false; });
+  }
+  // Tempel gambar dari clipboard (aktif saat di langkah Visual)
+  document.addEventListener('paste', function(e){
+    var st3 = document.getElementById('aiStep3'); if(!st3 || st3.style.display === 'none') return;
+    var pg = document.getElementById('page-studio'); if(pg && pg.style.display === 'none') return;
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for(var i = 0; i < items.length; i++){
+      if(items[i].type.indexOf('image/') === 0){
+        var f = items[i].getAsFile(); if(!f) continue;
+        var r = new FileReader();
+        r.onload = function(){ aiPasangGambar(r.result); };
+        r.readAsDataURL(f); e.preventDefault(); return;
+      }
+    }
+  });
+  // Kontrol editor
+  function aiTandaiAktif(id, btn){
+    document.querySelectorAll('#' + id + ' button').forEach(function(b){ b.classList.toggle('active', b === btn); });
+  }
+  window.aiSetLayout = function(l, btn){ var d = aiDesign(); if(!d) return; d.layout = l; aiTandaiAktif('aiLayout', btn); aiRenderPreview(); };
+  window.aiSetWarna = function(c, btn){ var d = aiDesign(); if(!d) return; d.color = c; aiTandaiAktif('aiWarna', btn); aiRenderPreview(); };
+  window.aiSetFont = function(f, btn){ var d = aiDesign(); if(!d) return; d.font = f; aiTandaiAktif('aiFont', btn); aiRenderPreview(); };
+  window.aiSetTitleSize = function(v){ var d = aiDesign(); if(!d) return; d.titleSize = +v; aiRenderPreview(); };
+  window.aiSetZoom = function(v){
+    aiCard.scale = +v;
+    var el = document.getElementById('aiZoomVal'); if(el) el.textContent = Math.round(v * 100) + '%';
+    aiRenderPreview();
+  };
+  window.aiSinkronKontrolKartu = function(){
+    var d = aiDesign(); if(!d) return;
+    var w = document.getElementById('aiWarna');
+    if(w && !w.children.length){
+      w.innerHTML = Object.keys(AI_COLORS).map(function(k){
+        return '<button class="ngt-swatch' + (k === d.color ? ' active' : '') + '" data-c="' + k + '" title="' + AI_COLORS[k].label + '" style="background:' + AI_COLORS[k].hex + '" onclick="aiSetWarna(\'' + k + '\',this)"></button>';
+      }).join('');
+    }
+    aiTandaiAktif('aiLayout', w && document.querySelector('#aiLayout [data-l="' + d.layout + '"]'));
+    aiTandaiAktif('aiWarna', w && document.querySelector('#aiWarna [data-c="' + d.color + '"]'));
+    aiTandaiAktif('aiFont', document.querySelector('#aiFont [data-f="' + d.font + '"]'));
+    var ts = document.getElementById('aiTitleSize'); if(ts) ts.value = d.titleSize;
+    var z = document.getElementById('aiZoom'); if(z) z.value = aiCard.scale;
+    var zv = document.getElementById('aiZoomVal'); if(zv) zv.textContent = Math.round(aiCard.scale * 100) + '%';
+  };
+  // Gambar: upload / URL / AI / hapus
+  window.aiImgUpload = function(){ document.getElementById('aiImgFile').click(); };
+  window.aiImgFileDipilih = function(inp){
+    var f = inp.files && inp.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){ aiPasangGambar(r.result); };
+    r.readAsDataURL(f); inp.value = '';
+  };
+  window.aiImgUrl = function(){
+    var u = prompt('Tempel URL gambar:');
+    if(u && u.trim()) aiPasangGambar(u.trim(), true);
+  };
+  function aiPasangGambar(src, isUrl){
+    var img = new Image(); if(isUrl) img.crossOrigin = 'anonymous';
+    img.onload = function(){
+      aiCard.img = src; aiCard.imgAspect = img.width / img.height;
+      aiCard.pos = { x:0, y:0 }; _aiImgCache = { src:src, img:img };
+      aiRenderPreview(); ngtToast('Gambar <b>terpasang</b> — geser untuk atur posisi');
+    };
+    img.onerror = function(){ ngtToast('Gagal memuat gambar.' + (isUrl ? ' URL mungkin menolak (CORS).' : '')); };
+    img.src = src;
+  }
+  window.aiImgHapus = function(){
+    aiCard.img = null; aiCard.pos = { x:0, y:0 }; aiCard.scale = 1;
+    _aiImgCache = { src:null, img:null }; aiRenderPreview();
+  };
+  // Gambar AI (beta): Gemini buatkan prompt aman -> generate gambar
+  window.aiImgAi = async function(){
+    var teks = document.getElementById('aiSumber').value.trim();
+    if(!teks){ ngtToast('Isi dulu <b>teks berita</b> di Langkah 1'); return; }
+    var btn = document.getElementById('aiImgAiBtn');
+    btn.disabled = true; btn.innerHTML = '\u23F3 Menggambar&hellip;';
+    ngtToast('AI sedang menggambar ilustrasi&hellip;');
+    try {
+      var k = await aiGeminiKey();
+      var promptText = 'Kamu AI Prompt Engineer profesional. Buat SATU kalimat prompt gambar bahasa Inggris untuk image generator berdasarkan berita ini: "' + teks.substring(0, 1000).replace(/"/g, '') + '". ATURAN: deskripsikan suasana dramatis, realistis, artistik (tanpa teks di dalam gambar). Jika tragis/kriminal: gelap, moody, cinematic. DILARANG kata gore, blood, violence, killing, nsfw — pakai kiasan (police tape, shattered glass, tense atmosphere). HANYA 1 kalimat bahasa Inggris, tanpa tanda kutip.';
+      var genPrompt = '';
+      try { genPrompt = (await aiGemini(promptText, false)).trim().replace(/^"|"$/g, ''); } catch(e){}
+      if(!genPrompt) genPrompt = 'A dramatic cinematic news illustration, high quality';
+      var models = ['gemini-2.5-flash-image', 'gemini-3-pro-image-preview'];
+      var lastErr = null, dataUrl = null;
+      for(var i = 0; i < models.length; i++){
+        try {
+          var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + models[i] + ':generateContent?key=' + encodeURIComponent(k.key);
+          var body = { contents:[{ parts:[{ text:genPrompt }] }], generationConfig:{ responseModalities:['IMAGE', 'TEXT'] } };
+          var res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+          var j = await res.json().catch(function(){ return {}; });
+          if(!res.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + res.status));
+          var parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+          for(var p = 0; p < parts.length; p++){
+            if(parts[p].inlineData && parts[p].inlineData.data){
+              dataUrl = 'data:' + (parts[p].inlineData.mimeType || 'image/png') + ';base64,' + parts[p].inlineData.data;
+              break;
+            }
+          }
+          if(dataUrl) break;
+          throw new Error('AI tidak mengembalikan gambar');
+        } catch(e){ lastErr = e; }
+      }
+      if(!dataUrl) throw (lastErr || new Error('Gagal generate gambar'));
+      aiPasangGambar(dataUrl);
+    } catch(e){ ngtToast('Gambar AI gagal: ' + esc(e.message)); }
+    btn.disabled = false; btn.innerHTML = '\u2728 Gambar AI';
+  };
+  // Download
+  window.aiDownload = async function(){
+    var s = aiSetAktif();
+    if(!s || !s.headline){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
+    var d = aiDesign();
+    if(d.layout !== 'no-photo' && !aiCard.img){ ngtToast('Upload gambar dulu, atau pilih layout <b>Tanpa Foto</b>'); return; }
+    ngtToast('Merender kartu&hellip;');
+    try {
+      await document.fonts.ready;
+      var cv = await aiGambarKartu(s, 2);
+      var a = document.createElement('a');
+      a.download = 'NewsGen-' + String(s.nama || 'kartu').replace(/[^\w\-]+/g, '-') + '.png';
+      a.href = cv.toDataURL('image/png'); a.click();
+      ngtToast('Kartu <b>' + esc(s.nama) + '</b> terdownload (2160&times;2700)');
+    } catch(e){ ngtToast('Gagal download: ' + esc(e.message)); }
+  };
+  window.aiDownloadSemua = async function(){
+    if(!aiW.sets.length){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
+    for(var i = 0; i < aiW.sets.length; i++){
+      var sd = aiW.sets[i].design || aiDesign();
+      if(sd.layout !== 'no-photo' && !aiCard.img){ ngtToast('Upload gambar dulu, atau pilih layout <b>Tanpa Foto</b>'); return; }
+    }
+    try {
+      await document.fonts.ready;
+      for(var i = 0; i < aiW.sets.length; i++){
+        var s = aiW.sets[i];
+        var cv = await aiGambarKartu(s, 2);
+        var a = document.createElement('a');
+        a.download = 'NewsGen-' + String(s.nama || ('kartu' + (i+1))).replace(/[^\w\-]+/g, '-') + '.png';
+        a.href = cv.toDataURL('image/png'); a.click();
+        await new Promise(function(r){ setTimeout(r, 400); });
+      }
+      ngtToast('<b>Semua kartu</b> terdownload');
+    } catch(e){ ngtToast('Gagal download semua: ' + esc(e.message)); }
+  };
+  // Blob kartu untuk publish IG/Threads (pakai desain aktif)
+  window.aiKartuBlob = function(){
+    return new Promise(function(res, rej){
+      var s = aiSetAktif();
+      if(!s || !s.headline){ rej(new Error('Generate dulu di langkah Kurasi')); return; }
+      document.fonts.ready.then(function(){
+        aiGambarKartu(s, 2).then(function(cv){
+          cv.toBlob(function(b){ b ? res(b) : rej(new Error('Gagal membuat gambar kartu')); }, 'image/png');
+        }).catch(rej);
+      }).catch(rej);
+    });
+  };
   // Caption + 4 pancingan per halaman (1 panggilan untuk semua)
   window.aiBuatCaption = async function(){
     if(!aiW.sets.length){ ngtToast('Generate dulu di atas'); return; }
@@ -1683,41 +2035,6 @@
     btn.disabled = false; btn.innerHTML = '&#10024; Buatkan Caption + Pancingan';
   };
 
-  // Download PNG 1080x1350 via canvas (pakai judul & nama halaman dari tab aktif)
-  function aiBuatKartuCanvas(){
-    var sCard = aiSetAktif();
-    var c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
-    var x = c.getContext('2d');
-    var g = x.createLinearGradient(0,0,1080,1350);
-    g.addColorStop(0,'#1c1917'); g.addColorStop(.55,'#451a03'); g.addColorStop(1,'#0a0a0d');
-    x.fillStyle = g; x.fillRect(0,0,1080,1350);
-    x.fillStyle = '#fbbf24'; x.font = '800 34px sans-serif';
-    x.fillText('N E W S G E N   S T U D I O', 70, 90);
-    x.fillStyle = '#fff'; x.font = '900 64px sans-serif';
-    var kata = ((sCard && sCard.headline) || aiW.judul || '').split(' '), baris = '', y = 220;
-    kata.forEach(function(k){
-      if((baris + ' ' + k).length > 26){ x.fillText(baris, 70, y); y += 84; baris = k; }
-      else baris = (baris ? baris + ' ' : '') + k;
-    });
-    x.fillText(baris, 70, y);
-    x.fillStyle = '#a1a1aa'; x.font = '400 30px sans-serif';
-    x.fillText(((sCard && sCard.nama) || '') + '  \u2022  ' + hariIni(), 70, 1250);
-    return c;
-  }
-  window.aiKartuBlob = function(){
-    return new Promise(function(res, rej){
-      aiBuatKartuCanvas().toBlob(function(b){ b ? res(b) : rej(new Error('Gagal membuat gambar kartu')); }, 'image/png');
-    });
-  };
-  window.aiDownload = function(){
-    var sD = aiSetAktif();
-    if(!sD || !sD.headline){ ngtToast('Generate dulu di langkah <b>Kurasi</b>'); return; }
-    var a = document.createElement('a');
-    a.download = 'newsgen-kartu.png';
-    a.href = aiBuatKartuCanvas().toDataURL('image/png');
-    a.click();
-    ngtToast('Kartu <b>terdownload</b> (1080&times;1350)');
-  };
   function aiPayload(){
     aiSimpanSetAktif();
     var s = aiSetAktif() || {};
