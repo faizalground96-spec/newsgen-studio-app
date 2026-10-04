@@ -447,6 +447,18 @@
           <p class="ngt-muted" id="ngtAiStatus" style="margin:10px 0 0"></p>
         </div>
 
+        <!-- WEB APP PRIBADI -->
+        <div class="ngt-card" style="margin-bottom:14px">
+          <h3>🔗 Web App Pribadi</h3>
+          <p class="ngt-muted" style="margin:0 0 12px">Tempel URL Web App dari deploy Apps Script milikmu sendiri. Kosongkan untuk memakai Web App pusat.</p>
+          <div class="ngt-field"><label class="ngt-label">URL Web App</label><input class="ngt-input" id="ngtWebappUrl" placeholder="https://script.google.com/macros/s/&hellip;/exec"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="ngt-btn" onclick="ngtSimpanWebapp()">💾 Simpan</button>
+            <button class="ngt-btn ghost" onclick="ngtTesWebapp()">🔌 Tes Koneksi</button>
+          </div>
+          <p class="ngt-muted" id="ngtWebappStatus" style="margin:10px 0 0"></p>
+        </div>
+
         <!-- UMUM -->
         <div class="ngt-card">
           <h3>⚙️ Umum</h3>
@@ -604,10 +616,10 @@
   };
 
   /* ============ KLIEN SPREADSHEET (via Apps Script Web App) ============
-     1 Web App melayani banyak pelanggan; routing per pid dikerjakan di
-     sisi Web App (sheet MASTER "Pelanggan": page_id -> spreadsheet).
-     URL Web App diambil dari kolom webapp_url baris pelanggan (saat login),
-     fallback ke BACKEND_CONFIG.spreadsheet.webAppUrl. */
+     Tiap pelanggan memakai Web App-nya sendiri (deploy Apps Script milik
+     pelanggan — mode mandiri, tanpa perlu isi sheet MASTER) atau Web App
+     pusat untuk akun demo. URL diambil dari kolom webapp_url baris
+     pelanggan (saat login), fallback ke BACKEND_CONFIG.spreadsheet.webAppUrl. */
   const Sheet = {
     base(){
       var s = ngtSession();
@@ -964,8 +976,35 @@
       if(CONFIG.dummy) ngtToast('Koneksi <b>' + esc(model) + '</b> berhasil &#10003; (simulasi)');
     }, 1200);
   };
+  window.ngtSimpanWebapp = async function(){
+    var s = ngtSession();
+    if(!s || !s.id){ ngtToast('Sesi habis — <b>login ulang</b>'); return; }
+    var u = document.getElementById('ngtWebappUrl').value.trim();
+    if(u && !/^https:\/\/script\.google\.com\/macros\/s\//.test(u)){ ngtToast('URL Web App <b>tidak valid</b>'); return; }
+    await Supa.update('pelanggan', s.id, { webapp_url: u });
+    s.webapp_url = u;
+    sessionStorage.setItem('ngt_session', JSON.stringify(s));
+    document.getElementById('ngtWebappStatus').innerHTML = u ? 'Menggunakan Web App <b>pribadi</b> &#10003;' : 'Menggunakan Web App <b>pusat</b>';
+    ngtToast('URL Web App <b>tersimpan</b>');
+  };
+  window.ngtTesWebapp = async function(){
+    var u = document.getElementById('ngtWebappUrl').value.trim() || Sheet.base();
+    if(!u){ ngtToast('Isi <b>URL Web App</b> dulu'); return; }
+    ngtToast('Mengetes koneksi Web App&hellip;');
+    try {
+      const r = await fetch(u);
+      const j = await r.json();
+      if(j && j.ok) document.getElementById('ngtWebappStatus').innerHTML = 'Web App <b>aktif</b> &#10003;' + (j.versi ? ' <span class="ngt-muted">(versi ' + esc(String(j.versi)) + ')</span>' : '');
+      else throw 0;
+    } catch(e){ document.getElementById('ngtWebappStatus').innerHTML = '<b style="color:#f87171">Tidak dapat terhubung</b> — periksa URL-nya'; }
+  };
   async function initSetting(){
     renderHalaman();
+    var s0 = ngtSession();
+    var wu = document.getElementById('ngtWebappUrl');
+    if(wu && s0) wu.value = s0.webapp_url || '';
+    var ws = document.getElementById('ngtWebappStatus');
+    if(ws) ws.innerHTML = (s0 && s0.webapp_url) ? 'Menggunakan Web App <b>pribadi</b> &#10003;' : 'Menggunakan Web App <b>pusat</b>';
     var ai = await DB.ai.get();
     if(ai){
       document.getElementById('ngtAiModel').value = ai.model || 'gemini-2.5-flash';

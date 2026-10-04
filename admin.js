@@ -175,7 +175,7 @@
           <input class="nga-input nga-search" placeholder="&#128269; Cari nama / email&hellip;" oninput="pelangganCari(this.value)">
           <button class="nga-btn" onclick="pelangganTambah()">&#65291; Tambah Pelanggan</button>
         </div>
-        <div class="nga-card" style="padding:8px 12px"><div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Nama</th><th>Email</th><th>Paket</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="ngaTabelBody"></tbody></table></div></div>
+        <div class="nga-card" style="padding:8px 12px"><div class="nga-tablewrap"><table class="nga-table"><thead><tr><th>Nama</th><th>Email</th><th>Paket</th><th>Status</th><th>Setup</th><th>Aksi</th></tr></thead><tbody id="ngaTabelBody"></tbody></table></div></div>
       </section>
       <section class="nga-page" id="apage-detail">
         <button class="nga-btn ghost small nga-backbtn" onclick="goPage('pelanggan')">&larr; Kembali</button>
@@ -326,6 +326,9 @@
   function chipAktif(p){
     return (p.aktif === false) ? '<span class="nga-chip gray">NONAKTIF</span>' : '<span class="nga-chip green">AKTIF</span>';
   }
+  function chipSetup(p){
+    return p.webapp_url ? '<span class="nga-chip green">SIAP</span>' : '<span class="nga-chip gray">MENUNGGU SETUP</span>';
+  }
 
   /* ============ RINGKASAN ============ */
   async function ringkasanMuat(){
@@ -360,7 +363,7 @@
       return !NGA.q || (p.nama+' '+p.email).toLowerCase().indexOf(NGA.q) >= 0;
     });
     document.getElementById('ngaTabelBody').innerHTML = list.map(function(p){
-      return '<tr><td style="color:#fff">' + esc(p.nama) + '</td><td>' + esc(p.email) + '</td><td>' + esc(p.paket||'-') + '</td><td>' + chipAktif(p) + '</td>' +
+      return '<tr><td style="color:#fff">' + esc(p.nama) + '</td><td>' + esc(p.email) + '</td><td>' + esc(p.paket||'-') + '</td><td>' + chipAktif(p) + '</td><td>' + chipSetup(p) + '</td>' +
         '<td style="white-space:nowrap">' +
         '<button class="nga-btn small" onclick="detailBuka(\'' + p.id + '\')">Kelola</button> ' +
         ((p.aktif === false)
@@ -368,7 +371,7 @@
           : '<button class="nga-btn small ghost" onclick="pelangganSetAktif(\'' + p.id + '\',false)">Nonaktifkan</button>') +
         ' <button class="nga-btn small nga-danger" onclick="pelangganHapus(\'' + p.id + '\')">Hapus</button>' +
         '</td></tr>';
-    }).join('') || '<tr><td colspan="5" style="text-align:center;color:#71717a">Belum ada pelanggan.</td></tr>';
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:#71717a">Belum ada pelanggan.</td></tr>';
   }
   window.pelangganSetAktif = async function(id, aktif){
     try { await DB.pelanggan.update(id, { aktif: aktif }); ngaToast(aktif ? 'Pelanggan <b>diaktifkan</b>' : 'Pelanggan <b>dinonaktifkan</b>'); pelangganMuat(); if(document.getElementById('apage-ringkasan').classList.contains('active')) ringkasanMuat(); }
@@ -415,13 +418,11 @@
       webapp_url: document.getElementById('mWebapp').value.trim(), aktif: true,
       max_halaman: parseInt(document.getElementById('mMaxHalaman').value, 10) || 3 };
     try {
+      // Model baru: pelanggan bawa Apps Script + aplikasi Meta sendiri.
+      // Spreadsheet TIDAK lagi dibuatkan otomatis — pelanggan ikuti panduan setup,
+      // lalu tempel URL Web App-nya (di Setting aplikasi atau kolom Akun di sini).
       await DB.pelanggan.tambah(p);
-      // Daftarkan ke Web App: buatkan spreadsheet + mapping
-      try {
-        var base = WApp.base(p);
-        var r = await WApp.post(base, 'pelanggan_register', { pelanggan_id: id, nama: nama });
-        ngaToast('Pelanggan <b>ditambahkan</b> + spreadsheet siap');
-      } catch(e2){ ngaToast('Pelanggan ditambahkan, tapi spreadsheet <b>gagal</b>: ' + esc(e2.message)); }
+      ngaToast('Pelanggan <b>ditambahkan</b> — status: menunggu setup Web App');
       ngaCloseModal(); pelangganMuat();
     } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
   };

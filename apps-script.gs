@@ -95,6 +95,24 @@ function pelangganMap() {
 function custSS(spreadsheetId) {
   return SpreadsheetApp.openById(spreadsheetId);
 }
+
+/* VERSI API — naikkan setiap ada perubahan action. Klien menyesuaikan. */
+var NGS_VERSI = '2.1';
+
+/* MODE MANDIRI: kalau sheet MASTER "Pelanggan" KOSONG (deploy milik pelanggan
+   sendiri), script melayani pid apapun memakai spreadsheet ini langsung.
+   Jadi pelanggan tidak perlu mengisi MASTER. */
+function cfgUntuk(pid) {
+  var map = pelangganMap();
+  var cfg = map.byPid[String(pid)];
+  if (cfg && cfg.spreadsheet_id) return cfg;
+  var kosong = Object.keys(map.byPid).length === 0;
+  if (kosong) {
+    return { pelanggan_id: String(pid), nama: '', page_id: '',
+             nama_halaman: '', spreadsheet_id: masterSS().getId() };
+  }
+  return null;
+}
 function custSheet(spreadsheetId, name, headers) {
   return getSheet(custSS(spreadsheetId), name, headers);
 }
@@ -130,7 +148,7 @@ function doGet(e) {
   if (action === 'komentar') return json({ ok: true, rows: komentarList(pid) });
   if (action === 'arsip')    return json({ ok: true, rows: arsipList(pid) });
   if (action === 'config')   return json({ ok: true, config: configGet(pid) });
-  return json({ ok: true, pesan: 'NewsGen Studio Webhook aktif' });
+  return json({ ok: true, pesan: 'NewsGen Studio Webhook aktif', versi: NGS_VERSI });
 }
 
 function doPost(e) {
@@ -156,9 +174,11 @@ function doPost(e) {
 /* Terima event feed Facebook, simpan komentar ke spreadsheet pelanggan. */
 function fbHandleEvent(data) {
   var map = pelangganMap();
+  var mandiri = Object.keys(map.byPage).length === 0;
   (data.entry || []).forEach(function(entry){
     var pageId = String(entry.id || '');
     var cfg = map.byPage[pageId];
+    if (mandiri && !cfg) cfg = { spreadsheet_id: masterSS().getId(), nama_halaman: pageId };
     if (!cfg || !cfg.spreadsheet_id) return; // page tidak terdaftar -> abaikan
     (entry.changes || []).forEach(function(ch){
       if (!ch || ch.field !== 'feed') return;
@@ -191,7 +211,7 @@ function komentarAppend(spreadsheetId, k) {
   return sheetAppendRow(sh, d.head.length ? d.head : HEAD_KOMENTAR, k);
 }
 function komentarList(pid) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id) return [];
   var d = sheetRows(komentarSheet(cfg.spreadsheet_id));
   var rows = d.rows.map(function(r){ delete r._row; return r; });
@@ -199,7 +219,7 @@ function komentarList(pid) {
   return rows.slice(0, 200);
 }
 function komentarUpdate(pid, id, patch) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id) return null;
   var sh = komentarSheet(cfg.spreadsheet_id);
   var d = sheetRows(sh);
@@ -207,6 +227,13 @@ function komentarUpdate(pid, id, patch) {
   d.rows.forEach(function(r){
     if (String(r.id) === String(id)) {
       hit = r;
+      // Komentar yang sudah terbalas otomatis dihapus dari antrean
+      // (sheet Komentar hanya berisi yang belum dibalas).
+      if (patch && patch.status === 'terkirim') {
+        sh.deleteRow(r._row);
+        hit.dihapus = true;
+        return;
+      }
       var vals = [];
       d.head.forEach(function(h){
         var nv = (patch && patch[h] !== undefined) ? patch[h] : r[h];
@@ -222,7 +249,7 @@ function komentarUpdate(pid, id, patch) {
    Mis. auto_reply = 1/0. Disimpan di sheet "Config" milik pelanggan. */
 var HEAD_CONFIG = ['kunci', 'nilai'];
 function configGet(pid) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id) return {};
   var sh = custSheet(cfg.spreadsheet_id, 'Config', HEAD_CONFIG);
   var d = sheetRows(sh), out = {};
@@ -230,7 +257,7 @@ function configGet(pid) {
   return out;
 }
 function configSet(pid, kunci, nilai) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id) return null;
   var sh = custSheet(cfg.spreadsheet_id, 'Config', HEAD_CONFIG);
   var d = sheetRows(sh), done = false;
@@ -247,7 +274,7 @@ function configSet(pid, kunci, nilai) {
 /* ================= ARSIP (per pelanggan) ================= */
 var HEAD_ARSIP = ['waktu', 'aksi', 'judul', 'halaman', 'detail'];
 function arsipTulis(pid, row) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id) return null;
   var sh = custSheet(cfg.spreadsheet_id, 'Arsip', HEAD_ARSIP);
   var d = sheetRows(sh);
@@ -272,7 +299,7 @@ function pelangganRegister(d) {
 
 /* Hapus komentar (dipakai dashboard admin). */
 function komentarHapus(pid, id) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id) return 0;
   var sh = komentarSheet(cfg.spreadsheet_id);
   var d = sheetRows(sh), n = 0;
@@ -284,7 +311,7 @@ function komentarHapus(pid, id) {
 
 /* Baca arsip (dipakai dashboard admin). */
 function arsipList(pid) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id) return [];
   var sh = custSheet(cfg.spreadsheet_id, 'Arsip', HEAD_ARSIP);
   var d = sheetRows(sh);
@@ -295,13 +322,13 @@ function arsipList(pid) {
 
 /* ============ FALLBACK GENERIK (kalau Supabase down) ============ */
 function custList(pid, sheetName) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id || !sheetName) return [];
   var d = sheetRows(custSheet(cfg.spreadsheet_id, sheetName, []));
   return d.rows.map(function(r){ delete r._row; return r; });
 }
 function custAppend(pid, sheetName, row) {
-  var cfg = pelangganMap().byPid[String(pid)];
+  var cfg = cfgUntuk(pid);
   if (!cfg || !cfg.spreadsheet_id || !sheetName) return null;
   var sh = custSheet(cfg.spreadsheet_id, sheetName, []);
   var d = sheetRows(sh);

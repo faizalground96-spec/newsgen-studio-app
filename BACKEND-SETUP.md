@@ -1,7 +1,21 @@
-# Panduan Setup Backend — NewsGen Studio (arsitektur final 2026-10-04)
+# Panduan Setup Backend — NewsGen Studio (arsitektur final 2026-10-04, revisi model 2026-10-04)
 
 Target: aplikasi **siap jual**, tiap pelanggan punya akun sendiri (email + PIN)
 dan datanya terisolasi.
+
+## Model kepemilikan (keputusan 2026-10-04)
+
+- **Milik KITA (pusat):** kode aplikasi NewsGen + database **Supabase**
+  (akun pelanggan, halaman, token, URL Web App). Inilah yang menjaga
+  publish/komentar tidak "nyasar" — sistem selalu tahu pelanggan ini →
+  halamannya yang itu → Web App-nya yang itu.
+- **Milik PELANGGAN:** aplikasi **Meta Developer** sendiri + deploy
+  **Apps Script** sendiri (kuota & spreadsheet di akun Google mereka).
+  Panduan untuk pelanggan: `PANDUAN-SETUP-PELANGGAN.md`.
+
+Alur pelanggan baru: admin tambah akun di dashboard (status otomatis
+"MENUNGGU SETUP") → pelanggan ikuti panduan → tempel URL Web App di
+menu Setting → status jadi "SIAP".
 
 ## 1. Arsitektur (ringkas)
 
@@ -15,11 +29,13 @@ dan datanya terisolasi.
 Firebase **tidak dipakai**.
 
 **Supabase — tabel pelanggan**
-`id | nama | email | pin | paket | model | apiKey | webapp_url`
+`id | nama | email | pin | paket | model | apiKey | webapp_url | max_halaman | aktif`
 - Dicek saat login (email + PIN).
-- `webapp_url` = URL Web App (akun Google) yang melayani pelanggan ini.
-  Buat jaga kuota harian: pelanggan bisa disebar ke beberapa akun Google,
-  tinggal isi URL yang beda per baris — tanpa ubah kode.
+- `webapp_url` = URL Web App **milik pelanggan** (hasil deploy Apps Script
+  mereka sendiri, lihat `PANDUAN-SETUP-PELANGGAN.md`). Kosong = pelanggan
+  belum selesai setup (badge "MENUNGGU SETUP" di dashboard admin);
+  fallback ke Web App pusat bila diisi.
+- Web App pusat (akun kita) tetap dipakai untuk akun demo.
 
 **Supabase — tabel halaman**
 `id | pelanggan_id | nama | pageId | token | webhook`
@@ -29,7 +45,8 @@ Firebase **tidak dipakai**.
 create table pelanggan (
   id text primary key,
   nama text, email text unique, pin text, paket text,
-  model text, apiKey text, webapp_url text
+  model text, apiKey text, webapp_url text,
+  max_halaman integer default 3, aktif boolean default true
 );
 create table halaman (
   id text primary key,
@@ -68,6 +85,8 @@ ke spreadsheet milik pelanggan yang tepat (berdasar Page ID).
 - `Komentar`: id | nama | halaman | waktu | pesan | balasan | status
 - `Arsip`: waktu | aksi | judul | halaman | detail
 - `Config`: kunci | nilai (mis. `auto_reply` = 1/0)
+
+> **CATATAN:** sheet `Komentar` berfungsi sebagai **ANTREAN** — baris yang statusnya diubah menjadi `terkirim` **otomatis dihapus** oleh `komentarUpdate()`. Jadi sheet ini hanya berisi komentar yang belum dibalas.
 
 Fungsi bantu di editor Apps Script (Run manual):
 - `buatSpreadsheetPelanggan('Nama Pelanggan')` → kembalikan ID spreadsheet.
