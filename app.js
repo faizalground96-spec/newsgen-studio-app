@@ -811,6 +811,38 @@
       const j = await res.json();
       if(!res.ok || j.error) throw new Error((j.error && j.error.message) || ('FB ' + res.status));
       return true;
+    },
+    // Terbit ASLI ke Halaman Facebook: upload foto -> feed post -> komentar pertama
+    // halaman: {pageId, token, nama}. firstComment opsional (gagal kirim tidak menggagalkan publish).
+    async publishPhoto(halaman, blob, caption, firstComment){
+      var ver = this.ver, pid = encodeURIComponent(halaman.pageId);
+      async function bacaErr(res, tahap){
+        var j = await res.json().catch(function(){ return {}; });
+        if(!res.ok || j.error) throw new Error('Facebook: ' + ((j.error && j.error.message) || (tahap + ' HTTP ' + res.status)));
+        return j;
+      }
+      // 1. Upload foto (belum diterbitkan)
+      var fd = new FormData();
+      fd.append('source', blob, 'kartu.png');
+      fd.append('published', 'false');
+      fd.append('access_token', halaman.token);
+      var j1 = await bacaErr(await fetch('https://graph.facebook.com/' + ver + '/' + pid + '/photos', { method:'POST', body:fd }), 'upload');
+      // 2. Buat postingan feed memakai foto itu
+      var fd2 = new FormData();
+      fd2.append('message', caption || '');
+      fd2.append('attached_media', JSON.stringify([{ media_fbid: j1.id }]));
+      fd2.append('access_token', halaman.token);
+      var j2 = await bacaErr(await fetch('https://graph.facebook.com/' + ver + '/' + pid + '/feed', { method:'POST', body:fd2 }), 'feed');
+      // 3. Komentar pertama (pancingan) — opsional
+      if(firstComment){
+        try {
+          var fd3 = new FormData();
+          fd3.append('message', firstComment);
+          fd3.append('access_token', halaman.token);
+          await fetch('https://graph.facebook.com/' + ver + '/' + encodeURIComponent(j2.id) + '/comments', { method:'POST', body:fd3 });
+        } catch(e){}
+      }
+      return j2.id;
     }
   };
 
@@ -1174,11 +1206,14 @@
     var list = await DB.halaman.list() || [];
     var h = list.find(function(x){ return x.id===id; });
     if(!h) return;
+    if(!h.pageId || !h.token){ ngtToast('Isi dulu <b>Page ID</b> & <b>token</b> untuk ' + esc(h.nama)); return; }
     ngtToast('Menguji koneksi ke <b>' + esc(h.nama) + '</b>&hellip;');
-    setTimeout(function(){
-      if(CONFIG.dummy) ngtToast('<b>' + esc(h.nama) + '</b> terhubung &#10003; (simulasi)');
-      else ngtToast('Mode backend: isi BACKEND_CONFIG dulu (lihat BACKEND-SETUP.md)');
-    }, 1200);
+    try {
+      var j = await FB.api(h.pageId, h.token, '', 'GET', { fields: 'id,name' });
+      ngtToast('<b>' + esc(h.nama) + '</b> terhubung &#10003; (' + esc(j.name || j.id) + ')');
+    } catch(e){
+      ngtToast('Gagal: ' + esc(e.message));
+    }
   };
 
   /* ============ UI: PENGATURAN AI ============ */
@@ -2065,10 +2100,22 @@
       if(plats.indexOf('instagram') >= 0){ await IG.publishImage(mediaUrl, caption); hasil.push('Instagram'); }
       if(plats.indexOf('threads') >= 0){ await TH.publish({ type:'IMAGE', text:caption, mediaUrl:mediaUrl }); hasil.push('Threads'); }
     } catch(e){ gagal.push(e.message); }
+    if(plats.indexOf('facebook') >= 0){
+      try {
+        var hals = await DB.halaman.list() || [];
+        var h = hals.find(function(x){ return x.pageId && sT.pageId && String(x.pageId) === String(sT.pageId); })
+             || hals.find(function(x){ return x.nama === sT.nama; });
+        if(!h || !h.pageId || !h.token) throw new Error('Halaman "' + sT.nama + '" belum punya Page ID / token di Setting');
+        ngtToast('Menerbitkan ke Facebook&hellip;');
+        var blobFb = await window.aiKartuBlob();
+        var komen1 = (p.pancingan || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean)[0] || '';
+        await FB.publishPhoto(h, blobFb, caption, komen1);
+        hasil.push('Facebook');
+      } catch(e){ gagal.push(e.message); }
+    }
     var msg = '';
     if(hasil.length) msg += 'Terbit di <b>' + hasil.join('</b>, <b>') + '</b> &#10003;';
     if(gagal.length) msg += (msg ? '<br>' : '') + 'Gagal: ' + esc(gagal.join('; '));
-    if(plats.indexOf('facebook') >= 0) msg += (msg ? '<br>' : '') + 'Facebook: <b>Diterbitkan</b> ke ' + esc(p.halaman) + ' (simulasi)';
     ngtToast(msg || 'Tidak ada platform dipilih');
   };
   window.aiDraft = function(){
