@@ -2,18 +2,26 @@
 
 Dashboard pelanggan NewsGen Studio. Live di:
 https://newsgen-studio-app.blogspot.com/p/app-newsgen-studio.html
-(via GitHub Pages: https://faizalground96-spec.github.io/newsgen-studio-app/)
+(yang me-load file di bawah via CDN jsDelivr)
 
 ## File
 
-- `index.html` — aplikasi utama (single file, tanpa dependensi eksternal)
+- `app.js` — aplikasi utama (HTML + JS, di-load via CDN)
+- `app.css` — stylesheet aplikasi (di-load via CDN)
 - `apps-script.gs` — backend Spreadsheet (Google Apps Script)
 - `BACKEND-SETUP.md` — panduan setup backend hybrid
+- `blogger-loader.html` — isi Page Blogger (hanya manggil CDN, ~1,5KB)
 
 ## Cara update
 
-Edit `index.html`, commit & push — halaman Blogger otomatis ikut baru
-(karena Blogger hanya me-load URL ini via iframe).
+Edit `app.js` / `app.css`, commit & push — lalu purge cache jsDelivr:
+
+```
+https://purge.jsdelivr.net/gh/faizalground96-spec/newsgen-studio-app@main/app.js
+https://purge.jsdelivr.net/gh/faizalground96-spec/newsgen-studio-app@main/app.css
+```
+
+Halaman Blogger otomatis ikut baru tanpa diutak-atik.
 
 ## Mode data
 
