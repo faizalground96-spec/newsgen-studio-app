@@ -226,15 +226,41 @@
 
   /* ============ KLIEN SUPABASE ============ */
   const Supa = {
+    authT: null,
+    authHeaders(){
+      var anonKey = BACKEND_CONFIG.supabase.anonKey;
+      return { apikey: anonKey,
+        Authorization: 'Bearer ' + (this.authT && this.authT.access ? this.authT.access : anonKey),
+        'Content-Type': 'application/json', Prefer: 'return=representation' };
+    },
+    async authCall(path, body){
+      var url = BACKEND_CONFIG.supabase.url.replace(/\/$/,'');
+      var res = await fetch(url + path, { method:'POST',
+        headers: { apikey: BACKEND_CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}) });
+      var j = await res.json().catch(function(){ return {}; });
+      if(!res.ok) throw new Error(j.error_description || j.msg || j.error || ('Auth ' + res.status));
+      return j;
+    },
+    async login(email, password){
+      var j = await this.authCall('/auth/v1/token?grant_type=password', { email: email, password: password });
+      this.authT = { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000 };
+      return j.user;
+    },
     async req(table, method, body, query){
-      const { url, anonKey } = BACKEND_CONFIG.supabase;
-      const res = await fetch(url.replace(/\/$/,'') + '/rest/v1/' + table + (query||''), {
-        method: method,
-        headers: { apikey: anonKey, Authorization: 'Bearer ' + anonKey, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: body ? JSON.stringify(body) : undefined
-      });
+      var url = BACKEND_CONFIG.supabase.url.replace(/\/$/,'') + '/rest/v1/' + table + (query||'');
+      var self = this;
+      var res = await fetch(url, { method: method, headers: self.authHeaders(), body: body ? JSON.stringify(body) : undefined });
+      if(res.status === 401 && self.authT){
+        try {
+          var j = await self.authCall('/auth/v1/token?grant_type=refresh_token', { refresh_token: self.authT.refresh });
+          self.authT = { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000 };
+          try { var s = JSON.parse(sessionStorage.getItem('nga_admin') || 'null'); if(s){ s._auth = self.authT; sessionStorage.setItem('nga_admin', JSON.stringify(s)); } } catch(e){}
+          res = await fetch(url, { method: method, headers: self.authHeaders(), body: body ? JSON.stringify(body) : undefined });
+        } catch(e){ self.authT = null; throw new Error('sesi habis — silakan login ulang'); }
+      }
       if(!res.ok) throw new Error('Supabase ' + res.status);
-      const t = await res.text();
+      var t = await res.text();
       return t ? JSON.parse(t) : [];
     },
     insert(table, row){ return this.req(table, 'POST', row); },
@@ -267,8 +293,20 @@
     catch(e){ return null; }
   }
   function ngaSetSession(a){
-    if(a) sessionStorage.setItem('nga_admin', JSON.stringify({ id:a.id, nama:a.nama, email:a.email }));
-    else sessionStorage.removeItem('nga_admin');
+    if(a){
+      var s = { id:a.id, nama:a.nama, email:a.email };
+      if(a._auth) s._auth = a._auth;
+      else if(Supa.authT) s._auth = { access:Supa.authT.access, refresh:Supa.authT.refresh, exp:Supa.authT.exp };
+      sessionStorage.setItem('nga_admin', JSON.stringify(s));
+      if(s._auth) Supa.authT = { access:s._auth.access, refresh:s._auth.refresh, exp:s._auth.exp };
+    }
+    else { sessionStorage.removeItem('nga_admin'); Supa.authT = null; }
+  }
+  function ngaJwtRole(token){
+    try {
+      var p = JSON.parse(atob(String(token).split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      return p.app_metadata && p.app_metadata.role;
+    } catch(e){ return null; }
   }
   window.ngaDoLogin = function(){
     var email = document.getElementById('ngaLoginEmail').value.trim().toLowerCase();
@@ -276,12 +314,18 @@
     var err = document.getElementById('ngaLoginErr');
     err.style.display = 'none';
     if(!email || !pin){ err.textContent = 'Isi email dan PIN dulu.'; err.style.display = 'block'; return; }
-    Supa.req('admin','GET',null,'?select=*&email=eq.'+encodeURIComponent(email)+'&pin=eq.'+encodeURIComponent(pin))
-      .then(function(r){
-        if(r && r[0]){ ngaSetSession(r[0]); location.reload(); }
-        else { err.textContent = 'Email / PIN salah.'; err.style.display = 'block'; }
-      })
-      .catch(function(){ err.textContent = 'Tidak bisa hubungi server.'; err.style.display = 'block'; });
+    err.textContent = 'Memeriksa…'; err.style.display = 'block';
+    (async function(){
+      try {
+        await Supa.login(email, pin);
+        if(ngaJwtRole(Supa.authT.access) !== 'admin'){ Supa.authT = null; throw new Error('Bukan akun admin.'); }
+        ngaSetSession({ id:'admin', nama:'Administrator', email:email });
+        location.reload();
+      } catch(e){
+        err.textContent = /bukan akun admin/i.test(e.message) ? e.message : 'Email / PIN salah.';
+        err.style.display = 'block';
+      }
+    })();
   };
   window.ngaLogout = function(){ ngaSetSession(null); location.reload(); };
 
@@ -414,6 +458,7 @@
     var email = document.getElementById('mEmail').value.trim().toLowerCase();
     var pin = document.getElementById('mPin').value.trim();
     if(!nama || !email || !pin){ ngaToast('Nama, email, dan PIN <b>wajib diisi</b>'); return; }
+    if(pin.length < 6){ ngaToast('PIN minimal <b>6 karakter</b>'); return; }
     var id = 'cust' + Date.now().toString(36);
     var p = { id: id, nama: nama, email: email, pin: pin,
       paket: document.getElementById('mPaket').value,
@@ -425,7 +470,14 @@
       // Spreadsheet TIDAK lagi dibuatkan otomatis — pelanggan ikuti panduan setup,
       // lalu tempel URL Web App-nya (di Setting aplikasi atau kolom Akun di sini).
       await DB.pelanggan.tambah(p);
-      ngaToast('Pelanggan <b>ditambahkan</b> — status: menunggu setup Web App');
+      try {
+        var wu = BACKEND_CONFIG.spreadsheet.webAppUrl;
+        var rz = await WApp.post(wu, 'auth_buat', { admin_jwt: Supa.authT.access, email: email, password: pin });
+        if(!rz || !rz.ok) throw new Error((rz && rz.error) || 'gagal buat user');
+        ngaToast('Pelanggan <b>ditambahkan</b> + user login dibuat &#10003;');
+      } catch(e){
+        ngaToast('Pelanggan ditambahkan, tapi <b>user login gagal</b>: ' + esc(e.message));
+      }
       ngaCloseModal(); pelangganMuat();
     } catch(e){ ngaToast('Gagal: ' + esc(e.message)); }
   };
@@ -681,6 +733,7 @@
     document.getElementById('nga-login').style.display = 'flex';
   } else {
     var s = ngaSession();
+    if(s && s._auth) Supa.authT = { access:s._auth.access, refresh:s._auth.refresh, exp:s._auth.exp };
     document.getElementById('ngaApp').style.display = 'flex';
     document.getElementById('ngaAdminName').textContent = s.nama || 'Admin';
     document.getElementById('ngaSetNama').value = s.nama || '';

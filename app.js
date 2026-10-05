@@ -196,7 +196,7 @@
     <input id="login-pin" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;" style="width:100%;margin:6px 0 18px;padding:11px 13px;background:#1b1b1f;border:1px solid #2c2c33;border-radius:12px;color:#fff;font-size:14px;box-sizing:border-box;">
     <button onclick="ngtDoLogin()" style="width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">Masuk</button>
     <div id="login-err" style="display:none;color:#ff7b7b;font-size:12px;text-align:center;margin-top:12px;"></div>
-    <div style="color:#55555e;font-size:11px;text-align:center;margin-top:16px;">Mode demo: <b style="color:#8b8b93">demo@newsgen.id</b> / PIN <b style="color:#8b8b93">1234</b></div>
+    <div style="color:#55555e;font-size:11px;text-align:center;margin-top:16px;">Mode demo: <b style="color:#8b8b93">demo@newsgen.id</b> / PIN <b style="color:#8b8b93">demo1234</b></div>
   </div>
 </div>
 
@@ -415,7 +415,7 @@
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
             <div style="flex:2;min-width:180px;"><label class="ngt-label">Judul</label><input class="ngt-input" id="anJudul" placeholder="Judul postingan..."></div>
             <div style="flex:1;min-width:130px;"><label class="ngt-label">Halaman</label><select class="ngt-select" id="anHalaman"></select></div>
-            <div style="flex:1;min-width:130px;"><label class="ngt-label">Jadwal</label><input class="ngt-input" id="anJadwal" placeholder="cth: Hari ini 18:00"></div>
+            <div style="flex:1;min-width:130px;"><label class="ngt-label">Jadwal</label><input class="ngt-input" id="anJadwal" type="datetime-local"></div>
             <button class="ngt-btn small" onclick="anTambah()">&#10133; Tambah</button>
           </div>
         </div>
@@ -446,21 +446,18 @@
       <!-- INSIGHT -->
       <section class="ngt-page" id="page-insight">
         <div class="ngt-title">Insight</div>
-        <div class="ngt-desc">Performa 7 hari terakhir.</div>
-        <div class="ngt-stats">
-          <div class="ngt-card ngt-stat"><div class="ico">👁️</div><div class="num">128rb</div><div class="lbl">Jangkauan</div></div>
-          <div class="ngt-card ngt-stat"><div class="ico">❤️</div><div class="num">12,4rb</div><div class="lbl">Interaksi</div></div>
-          <div class="ngt-card ngt-stat"><div class="ico">💬</div><div class="num">3,2rb</div><div class="lbl">Komentar</div></div>
-          <div class="ngt-card ngt-stat"><div class="ico">🚀</div><div class="num">96</div><div class="lbl">Postingan terbit</div></div>
-        </div>
-        <div class="ngt-card">
-          <h3>🏆 Postingan Teratas</h3>
-          <div class="ngt-list">
-            <div><div style="display:flex;justify-content:space-between;font-size:14px"><b style="color:#fff">Timnas Indonesia Menang 2-0 atas Vietnam</b><span class="ngt-muted">48rb reach</span></div><div class="ngt-bar"><i style="width:100%"></i></div></div>
-            <div><div style="display:flex;justify-content:space-between;font-size:14px"><b style="color:#fff">Harga Cabai Rawit Naik 40%</b><span class="ngt-muted">32rb reach</span></div><div class="ngt-bar"><i style="width:67%"></i></div></div>
-            <div><div style="display:flex;justify-content:space-between;font-size:14px"><b style="color:#fff">Waspada Hujan Lebat 3 Hari</b><span class="ngt-muted">25rb reach</span></div><div class="ngt-bar"><i style="width:52%"></i></div></div>
-            <div><div style="display:flex;justify-content:space-between;font-size:14px"><b style="color:#fff">Jembatan Baru Cilacap Dibuka</b><span class="ngt-muted">18rb reach</span></div><div class="ngt-bar"><i style="width:38%"></i></div></div>
+        <div class="ngt-desc">Performa asli halaman Facebook-mu (7 hari terakhir).</div>
+        <div class="ngt-card" style="margin-bottom:14px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <div style="flex:1;min-width:160px"><label class="ngt-label">Halaman</label><select class="ngt-select" id="insHalaman"></select></div>
+            <button class="ngt-btn small" onclick="insMuat()">&#128260; Muat Data</button>
+            <button class="ngt-btn small ghost" onclick="insAnalisis()">&#10024; Analisis AI</button>
           </div>
+        </div>
+        <div id="insBody"><div class="ngt-muted" style="text-align:center;padding:40px">Pilih halaman lalu klik <b>Muat Data</b>.</div></div>
+        <div class="ngt-card" id="insAiCard" style="display:none;margin-top:14px">
+          <h3>&#10024; Analisis AI</h3>
+          <div id="insAiBody" class="ngt-muted" style="white-space:pre-wrap;font-size:14px;line-height:1.6"></div>
         </div>
       </section>
 
@@ -548,6 +545,14 @@
           <h3>⚙️ Umum</h3>
           <div class="ngt-field"><label class="ngt-label">Zona waktu posting</label><select class="ngt-select"><option>Asia/Jakarta (WIB)</option><option>Asia/Makassar (WITA)</option><option>Asia/Jayapura (WIT)</option></select></div>
           <div class="ngt-row" style="border:none;background:none;padding:4px 0"><div style="flex:1"><b style="color:#fff;font-size:14px">NewsGen Studio</b><div class="ngt-muted">Versi 1.0 &bull; datamu tersimpan aman di akunmu</div></div></div>
+          <div class="ngt-field"><label class="ngt-label">Backup pengaturan</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="ngt-btn small ghost" onclick="ngtExportBackup()">&#128229; Export Backup</button>
+              <button class="ngt-btn small ghost" onclick="document.getElementById('ngtBackupFile').click()">&#128230; Import Backup</button>
+              <input type="file" id="ngtBackupFile" accept=".json,application/json" style="display:none" onchange="ngtImportBackup(this)">
+            </div>
+            <p class="ngt-muted" style="font-size:12px;margin:8px 0 0">Simpan semua pengaturan (halaman, API key, Web App, Instagram/Threads) ke file. Bisa dipulihkan kapan saja.</p>
+          </div>
         </div>
       </section>
 
@@ -605,7 +610,9 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, ig_user_id:p.ig_user_id, ig_token:p.ig_token, threads_user_id:p.threads_user_id, threads_token:p.threads_token, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
+    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, ig_user_id:p.ig_user_id, ig_token:p.ig_token, threads_user_id:p.threads_user_id, threads_token:p.threads_token, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman), _auth:(p._auth || (Supa.authT ? { access:Supa.authT.access, refresh:Supa.authT.refresh, exp:Supa.authT.exp } : null)) } : null;
+    if(d && d._auth) Supa.authT = { access:d._auth.access, refresh:d._auth.refresh, exp:d._auth.exp };
+    if(!d) Supa.authT = null;
     ngtMemSession = d;
     try {
       if(d) sessionStorage.setItem('ngt_session', JSON.stringify(d));
@@ -623,21 +630,30 @@
     err.style.display = 'none';
     if(!email || !pin){ err.textContent = 'Isi email dan PIN dulu.'; err.style.display = 'block'; return; }
     function ok(p){ ngtSetSession(p); if(window.ngtEnterApp) window.ngtEnterApp(); }
-    function gagal(){ err.textContent = 'Email / PIN salah.'; err.style.display = 'block'; }
     if(CONFIG.dummy){
       var p = DUMMY_PELANGGAN.find(function(x){ return x.email === email && x.pin === pin; });
       if(p) ok(p); else gagal();
-    } else {
-      Supa.req('pelanggan','GET',null,'?select=*&email=eq.'+encodeURIComponent(email)+'&pin=eq.'+encodeURIComponent(pin))
-        .then(function(r){ if(r && r[0]) ok(r[0]); else gagal(); })
-        .catch(gagal);
+      return;
     }
+    err.textContent = 'Memeriksa…'; err.style.display = 'block';
+    (async function(){
+      try {
+        await Supa.login(email, pin);
+        var r = await Supa.req('pelanggan','GET',null,'?select=*&email=eq.'+encodeURIComponent(email));
+        var p = r && r[0];
+        if(!p){ await Supa.logout(); gagal('Akun tidak ditemukan.'); return; }
+        if(p.aktif === false){ await Supa.logout(); gagal('Akun dinonaktifkan. Hubungi admin.'); return; }
+        p._auth = Supa.authT ? { access:Supa.authT.access, refresh:Supa.authT.refresh, exp:Supa.authT.exp } : null;
+        err.style.display = 'none';
+        ok(p);
+      } catch(e){ gagal(/sesi habis|invalid|Invalid/i.test(e.message) ? 'Email / PIN salah.' : e.message); }
+    })();
+    function gagal(msg){ err.textContent = msg || 'Email / PIN salah.'; err.style.display = 'block'; }
   };
   window.ngtDoLogout = function(){
     ngtConfirm('Keluar dari dashboard?', function(ya){
       if(!ya) return;
-      ngtSetSession(null);
-      location.reload();
+      Supa.logout().finally(function(){ ngtSetSession(null); location.reload(); });
     });
   };
   /* ============================================================
@@ -704,16 +720,61 @@
      Tabel yang dipakai: pelanggan, halaman */
   const Supa = {
     ok(){ return !!(BACKEND_CONFIG.supabase.url && BACKEND_CONFIG.supabase.anonKey); },
-    async req(table, method, body, query){
-      const { url, anonKey } = BACKEND_CONFIG.supabase;
-      const res = await fetch(url.replace(/\/$/,'') + '/rest/v1/' + table + (query||''), {
-        method: method,
-        headers: { apikey: anonKey, Authorization: 'Bearer ' + anonKey, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: body ? JSON.stringify(body) : undefined
+    authT: null, // {access, refresh, exp} — diisi saat login
+    authHeaders(){
+      var anonKey = BACKEND_CONFIG.supabase.anonKey;
+      return { apikey: anonKey,
+        Authorization: 'Bearer ' + (this.authT && this.authT.access ? this.authT.access : anonKey),
+        'Content-Type': 'application/json', Prefer: 'return=representation' };
+    },
+    async authCall(path, body){
+      var url = BACKEND_CONFIG.supabase.url.replace(/\/$/,'');
+      var res = await fetch(url + path, {
+        method: 'POST',
+        headers: { apikey: BACKEND_CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
       });
-      if(!res.ok) throw new Error('Supabase ' + res.status);
-      const t = await res.text();
-      return t ? JSON.parse(t) : [];
+      var j = await res.json().catch(function(){ return {}; });
+      if(!res.ok) throw new Error(j.error_description || j.msg || j.error || ('Auth ' + res.status));
+      return j;
+    },
+    async login(email, password){
+      var j = await this.authCall('/auth/v1/token?grant_type=password', { email: email, password: password });
+      this.authT = { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000 };
+      return j.user;
+    },
+    async refresh(){
+      if(!this.authT || !this.authT.refresh) throw new Error('sesi habis');
+      var j = await this.authCall('/auth/v1/token?grant_type=refresh_token', { refresh_token: this.authT.refresh });
+      this.authT = { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000 };
+    },
+    async logout(){
+      try {
+        if(this.authT && this.authT.access){
+          var url = BACKEND_CONFIG.supabase.url.replace(/\/$/,'');
+          await fetch(url + '/auth/v1/logout', { method:'POST',
+            headers: { apikey: BACKEND_CONFIG.supabase.anonKey, Authorization: 'Bearer ' + this.authT.access } });
+        }
+      } catch(e){}
+      this.authT = null;
+    },
+    async req(table, method, body, query){
+      var url = BACKEND_CONFIG.supabase.url.replace(/\/$/,'') + '/rest/v1/' + table + (query||'');
+      var self = this;
+      async function panggil(){
+        var res = await fetch(url, { method: method, headers: self.authHeaders(), body: body ? JSON.stringify(body) : undefined });
+        if(res.status === 401 && self.authT){
+          try { await self.refresh(); }
+          catch(e){ self.authT = null; try { ngtSetSession(null); } catch(e2){} throw new Error('sesi habis — silakan login ulang'); }
+          var res2 = await fetch(url, { method: method, headers: self.authHeaders(), body: body ? JSON.stringify(body) : undefined });
+          if(!res2.ok) throw new Error('Supabase ' + res2.status);
+          var t2 = await res2.text(); return t2 ? JSON.parse(t2) : [];
+        }
+        if(!res.ok) throw new Error('Supabase ' + res.status);
+        var t = await res.text();
+        return t ? JSON.parse(t) : [];
+      }
+      return panggil();
     },
     list(table){ return this.req(table, 'GET', null, '?select=*'); },
     insert(table, row){ return this.req(table, 'POST', row); },
@@ -948,7 +1009,9 @@
   }
   function ngtPid(){ var s = ngtSession(); return s ? s.id : null; }
   function ngtSetSession(p){
-    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, ig_user_id:p.ig_user_id, ig_token:p.ig_token, threads_user_id:p.threads_user_id, threads_token:p.threads_token, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman) } : null;
+    var d = p ? { id:p.id, nama:p.nama, email:p.email, paket:p.paket, model:p.model, apiKey:p.apiKey, webapp_url:p.webapp_url, ig_user_id:p.ig_user_id, ig_token:p.ig_token, threads_user_id:p.threads_user_id, threads_token:p.threads_token, max_halaman:((p.max_halaman===undefined||p.max_halaman===null)?3:p.max_halaman), _auth:(p._auth || (Supa.authT ? { access:Supa.authT.access, refresh:Supa.authT.refresh, exp:Supa.authT.exp } : null)) } : null;
+    if(d && d._auth) Supa.authT = { access:d._auth.access, refresh:d._auth.refresh, exp:d._auth.exp };
+    if(!d) Supa.authT = null;
     ngtMemSession = d;
     try {
       if(d) sessionStorage.setItem('ngt_session', JSON.stringify(d));
@@ -1066,10 +1129,11 @@
         return DB.halaman.list().then(function(hl){
           var h = (hl || []).find(function(x){ return x.nama === a.halaman; }) || (hl || [])[0];
           if(!h || !h.token){ ngtToast('Pilih halaman yang <b>sudah terhubung</b> di Setting'); return null; }
-          var dt = prompt('Jadwal publish ke ' + h.nama + ' (format: 2026-10-05 18:00 WIB)', '');
-          if(!dt) return null;
-          return FB.schedulePost(h, (a.judul || '') + (a.caption ? '\n\n' + a.caption : ''), dt.trim())
-            .then(function(){ ngtToast('Terjadwal di <b>' + esc(h.nama) + '</b>'); return true; })
+          var dt = String(a.jadwal || '').replace('T', ' ').trim();
+          if(!dt || dt === 'Belum dijadwalkan'){ ngtToast('Isi dulu <b>jadwalnya</b>'); return null; }
+          ngtToast('Menjadwalkan ke Facebook&hellip;');
+          return FB.schedulePost(h, (a.judul || '') + (a.caption ? '\n\n' + a.caption : ''), dt)
+            .then(function(){ ngtToast('Terjadwal di <b>' + esc(h.nama) + '</b> &#10003;'); anMuat(); return true; })
             .catch(function(e){ ngtToast('Gagal menjadwalkan: ' + esc(e.message)); return null; });
         });
       },
@@ -1315,6 +1379,66 @@
       el.innerHTML = 'Threads terhubung &#10003; <b>@' + esc(j.username || j.id) + '</b>';
     } catch(e){ el.innerHTML = 'Gagal: ' + esc(e.message); }
   };
+  window.ngtExportBackup = async function(){
+    try {
+      ngtToast('Menyiapkan backup&hellip;');
+      var s = ngtSession() || {};
+      var data = {
+        app: 'newsgen-studio', versi: 1, tanggal: new Date().toISOString(), email: s.email || '',
+        halaman: await DB.halaman.list() || [],
+        ai: await DB.ai.get() || {},
+        webapp_url: s.webapp_url || '',
+        ig_user_id: s.ig_user_id || '', ig_token: s.ig_token || '',
+        threads_user_id: s.threads_user_id || '', threads_token: s.threads_token || ''
+      };
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'newsgen-backup-' + new Date().toISOString().slice(0,10) + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      ngtToast('Backup <b>diunduh</b> &#10003;');
+    } catch(e){ ngtToast('Gagal: ' + esc(e.message)); }
+  };
+  window.ngtImportBackup = function(input){
+    var f = input.files && input.files[0];
+    input.value = '';
+    if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      var d;
+      try { d = JSON.parse(r.result); } catch(e){ ngtToast('<b>File tidak valid</b>'); return; }
+      if(!d || d.app !== 'newsgen-studio'){ ngtToast('<b>Bukan file backup NewsGen</b>'); return; }
+      ngtConfirm('Pulihkan backup dari ' + esc(d.tanggal ? d.tanggal.slice(0,10) : '?') + '? Pengaturan saat ini akan diganti.', function(ya){
+        if(ya) ngtProsesBackup(d);
+      });
+    };
+    r.readAsText(f);
+  };
+  async function ngtProsesBackup(d){
+    try {
+      ngtToast('Memulihkan backup&hellip;');
+      var sudah = await DB.halaman.list() || [];
+      var ada = {};
+      sudah.forEach(function(h){ if(h.pageId) ada[String(h.pageId)] = 1; });
+      for(var i = 0; i < (d.halaman || []).length; i++){
+        var h = d.halaman[i];
+        if(h && h.pageId && !ada[String(h.pageId)]){
+          await DB.halaman.tambah({ nama:h.nama || 'Halaman', pageId:String(h.pageId), token:h.token || '', webhook:h.webhook || '' });
+          ada[String(h.pageId)] = 1;
+        }
+      }
+      if(d.ai) await DB.ai.simpan({ model:d.ai.model || 'gemini-3.8-flash', apiKey:d.ai.apiKey || '' });
+      var patch = {};
+      ['webapp_url','ig_user_id','ig_token','threads_user_id','threads_token'].forEach(function(k){ if(d[k] !== undefined) patch[k] = d[k]; });
+      if(Object.keys(patch).length){
+        await Supa.update('pelanggan', ngtPid(), patch);
+        var s = ngtSession();
+        if(s){ Object.assign(s, patch); try { sessionStorage.setItem('ngt_session', JSON.stringify(s)); } catch(e){} }
+      }
+      await initSetting();
+      ngtToast('Backup <b>dipulihkan</b> &#10003;');
+    } catch(e){ ngtToast('Gagal: ' + esc(e.message)); }
+  }
   async function initSetting(){
     renderHalaman();
     var s0 = ngtSession();
@@ -1398,6 +1522,7 @@
     if(name==='komentar') kmLoad();
     if(name==='radar') ngtMuatBerita();
     if(name==='antrean') anMuat();
+    if(name==='insight') insSiap();
     document.querySelectorAll('#ngtNav button').forEach(function(b){ b.classList.toggle('active', b.dataset.target===name); });
     document.querySelectorAll('.ngt-page').forEach(function(p){ p.classList.toggle('active', p.id==='page-'+name); });
     document.getElementById('ngtPageTitle').textContent = titles[name] || name;
@@ -1528,12 +1653,27 @@
     var msg = '';
     if(hasil.length) msg += 'Terbit di <b>' + hasil.join('</b>, <b>') + '</b> &#10003;';
     if(gagal.length) msg += (msg ? '<br>' : '') + 'Gagal: ' + esc(gagal.join('; '));
-    if(plats.indexOf('facebook') >= 0) msg += (msg ? '<br>' : '') + '<b>' + ngtJenisLabel() + '</b> diterbitkan ke <b>' + esc(d.halaman) + '</b> (simulasi)';
+    if(plats.indexOf('facebook') >= 0){
+      try {
+        var halsM = await DB.halaman.list() || [];
+        var hm = halsM.find(function(x){ return x.nama === d.halaman; });
+        if(!hm || !hm.pageId || !hm.token) throw new Error('Halaman "' + d.halaman + '" belum punya Page ID / token di Setting');
+        ngtToast('Menerbitkan ke Facebook&hellip;');
+        if(d.file && (d.file.type || '').indexOf('image') === 0) await FB.publishPhoto(hm, d.file, d.teks, '');
+        else await FB.api(hm.pageId, hm.token, 'feed', 'POST', { message: d.teks });
+        hasil.push('Facebook');
+      } catch(e){ gagal.push(e.message); }
+    }
     ngtToast(msg || 'Tidak ada platform dipilih');
   };
   window.ngtManualAntre = function(){
     var d = ngtValidasiManual(); if(!d) return;
-    ngtToast('<b>' + ngtJenisLabel() + '</b> masuk <b>antrean</b> (simulasi)');
+    goPage('antrean');
+    var j = document.getElementById('anJudul');
+    if(j) j.value = d.teks.substring(0, 120);
+    var s = document.getElementById('anHalaman');
+    if(s) s.value = d.halaman;
+    ngtToast('Lengkapi <b>jadwal</b> lalu klik Tambah');
   };
 
   // Dari Radar -> Studio AI News dengan teks terisi
@@ -1587,19 +1727,78 @@
         '</div></div></div>';
     }).join('');
   }
+  var RSS_FEEDS = [
+    { nama:'Antara', url:'https://www.antaranews.com/rss/terkini.xml' },
+    { nama:'CNN Indonesia', url:'https://www.cnnindonesia.com/rss' },
+    { nama:'Liputan6', url:'https://www.liputan6.com/rss' },
+    { nama:'Detik', url:'https://rss.detik.com/index.php/detikcom' },
+    { nama:'Google News', url:'https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id' }
+  ];
+  function rssKategoriJS(judul){
+    var t = (' ' + (judul || '')).toLowerCase();
+    if(/bola|timnas|liga|\bgol\b|pertandingan|atlet|olahraga|bulu tangkis|motogp|balap|persib|persija|pssi/.test(t)) return 'olahraga';
+    if(/cuaca|hujan|bmkg|banjir|longsor|kemarau|gelombang|angin kencang/.test(t)) return 'cuaca';
+    if(/cilacap|jawa tengah|jateng|semarang|\bsolo\b|surakarta|purwokerto|tegal|pekalongan|banyumas|kebumen/.test(t)) return 'jateng';
+    if(/viral|heboh|geger|kontroversi|skandal/.test(t)) return 'viral';
+    return 'nasional';
+  }
+  function rssBersihHtml(s){
+    var d = document.createElement('div');
+    d.innerHTML = s || '';
+    return (d.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+  async function rssAmbil(feed){
+    var proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(feed.url);
+    var res = await fetch(proxied);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    var txt = await res.text();
+    var doc = new DOMParser().parseFromString(txt, 'text/xml');
+    var els = doc.querySelectorAll('item');
+    if(!els.length) els = doc.querySelectorAll('entry');
+    var out = [], ambil = Math.min(els.length, 6);
+    for(var i = 0; i < ambil; i++){
+      var el = els[i];
+      var g = function(n){ var c = el.querySelector(n); return c ? c.textContent.trim() : ''; };
+      var judul = g('title');
+      if(!judul) continue;
+      var link = g('link');
+      if(!link){ var la = el.querySelector('link'); if(la && la.getAttribute('href')) link = la.getAttribute('href'); }
+      out.push({
+        judul: judul,
+        ringkasan: rssBersihHtml(g('description') || g('summary')).substring(0, 160),
+        sumber: feed.nama,
+        url: link,
+        waktu: g('pubDate') || g('published') || g('updated') || '',
+        kategori: rssKategoriJS(judul)
+      });
+    }
+    return out;
+  }
   window.ngtMuatBerita = async function(paksa){
     var box = document.getElementById('ngtNewsList');
     if(!box) return;
     if(!paksa && Date.now() - ngtNewsCache.ts < 5*60*1000 && ngtNewsCache.items.length){ ngtRenderBerita(ngtNewsCache.items); return; }
-    if(!Sheet.ok()){ box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Isi <b>URL Web App</b> di Setting dulu untuk memuat berita.</div>'; return; }
     box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Mengambil berita terbaru&hellip;</div>';
+    var items = [];
     try {
-      var r = await Sheet.callg({ action:'rss', pid:ngtPid() });
-      var items = (r && r.items) || [];
-      ngtNewsCache = { ts:Date.now(), items:items };
-      ngtRenderBerita(items);
-    } catch(e){
-      box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Gagal memuat berita: ' + esc(e.message) + '<br><button class="ngt-btn small" style="margin-top:12px" onclick="ngtMuatBerita(true)">Coba lagi</button></div>';
+      var hasil = await Promise.all(RSS_FEEDS.map(function(f){
+        return rssAmbil(f).catch(function(){ return []; });
+      }));
+      hasil.forEach(function(arr){ items = items.concat(arr); });
+      // Acak ringan agar sumber bervariasi, batasi 24
+      items.sort(function(){ return Math.random() - 0.5; });
+      items = items.slice(0, 24);
+    } catch(e){}
+    if(!items.length && Sheet.ok()){
+      try {
+        var r = await Sheet.callg({ action:'rss', pid:ngtPid() });
+        items = (r && r.items) || [];
+      } catch(e){}
+    }
+    ngtNewsCache = { ts:Date.now(), items:items };
+    if(items.length){ ngtRenderBerita(items); }
+    else {
+      box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Belum bisa memuat berita saat ini.<br><button class="ngt-btn small" style="margin-top:12px" onclick="ngtMuatBerita(true)">Coba lagi</button></div>';
     }
   };
 
@@ -1701,14 +1900,32 @@
     var u = document.getElementById('aiUrl').value.trim();
     if(!u){ ngtToast('Isi dulu <b>URL beritanya</b>'); return; }
     if(!/^https?:\/\//i.test(u)) u = 'https://' + u;
-    if(!Sheet.ok()){ ngtToast('Isi <b>URL Web App</b> di Setting dulu'); return; }
     ngtToast('Mengambil berita dari URL&hellip;');
+    var judul = '', teks = '', err = '';
     try {
-      var r = await Sheet.callg({ action:'ambil_url', url:u, pid:ngtPid() });
-      if(!r || !r.ok) throw new Error((r && r.error) || 'Gagal mengambil isi URL');
-      document.getElementById('aiSumber').value = (r.judul ? r.judul + '\n' : '') + r.teks;
+      var res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(u));
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      var html = await res.text();
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var t = doc.querySelector('title');
+      judul = t ? t.textContent.replace(/\s+/g, ' ').trim() : '';
+      doc.querySelectorAll('script,style,nav,header,footer,aside').forEach(function(e){ e.remove(); });
+      teks = (doc.body ? doc.body.textContent : '').replace(/\s+/g, ' ').trim().substring(0, 12000);
+      if(!teks || teks.length < 200) throw new Error('isi halaman tidak terbaca');
+    } catch(e){ err = e.message; }
+    if(!teks && Sheet.ok()){
+      try {
+        var r = await Sheet.callg({ action:'ambil_url', url:u, pid:ngtPid() });
+        if(r && r.ok){ judul = r.judul || judul; teks = r.teks; err = ''; }
+        else err = (r && r.error) || err;
+      } catch(e){ err = e.message; }
+    }
+    if(teks){
+      document.getElementById('aiSumber').value = (judul ? judul + '\n' : '') + teks;
       ngtToast('Berita <b>berhasil</b> diambil dari URL');
-    } catch(e){ ngtToast('Gagal: ' + esc(e.message)); }
+    } else {
+      ngtToast('Gagal: ' + esc(err || 'tidak bisa membaca URL'));
+    }
   };
   window.aiPilihTone = function(t, btn){
     aiW.tone = t;
@@ -2210,9 +2427,9 @@
 
   // ============ SISTEM KOMENTAR (ala contoh) ============
   var kmState = { list:[], tab:'semua', q:'', polling:false, timer:null, view:'antrean' };
-  // Simulasi AI: balas komentar dengan gaya natural (produksi: panggil AI via backend)
-  function kmAiReply(pesan){
-    var p = pesan.toLowerCase();
+  // Template cadangan bila AI tidak tersedia
+  function kmAiReplyTemplate(pesan){
+    var p = (pesan || '').toLowerCase();
     if(/berapa|harga|daftar|cara|gimana|bagaimana|kapan|dimana|di mana|jam|syarat/.test(p))
       return 'Halo kak! Makasih pertanyaannya 🙏 Info lengkapnya sudah kami rangkum di postingan ya. Kalau masih kurang jelas, tulis lagi di sini, nanti kami bantu jawab!';
     if(/setuju|betul|benar|keren|mantap|bagus|hebat/.test(p))
@@ -2222,6 +2439,22 @@
     if(/macet|jalan|buka|tutup/.test(p))
       return 'Iya kak, semoga aksesnya makin lancar ya. Hati-hati di jalan dan makasih infonya! 🙏';
     return 'Halo kak, makasih banyak komentarnya! 🙏 Senang bisa diskusi bareng di sini.';
+  }
+  // Balasan AI asli via Gemini (pakai API key pelanggan di Setting)
+  async function kmAiReply(pesan, nama, halaman){
+    try {
+      var t = await aiGemini(
+        'Kamu adalah admin halaman Facebook yang ramah dan natural (bahasa Indonesia santai, gaya sosmed).\n' +
+        'Tulis SATU balasan singkat (maksimal 2 kalimat) untuk komentar di bawah ini.\n' +
+        'Aturan: sopan dan hangat, tidak kaku; boleh maksimal 1 emoji; jangan mengulang kata-kata komentarnya; ' +
+        'JANGAN membuat klaim, angka, atau fakta baru; jika komentar berupa pertanyaan yang tidak bisa kamu jawab, ' +
+        'arahkan dengan ramah untuk melihat postingan atau kirim DM. Jangan beri tanda kutip.\n\n' +
+        'Komentar dari ' + (nama || 'pengunjung') + (halaman ? ' di halaman ' + halaman : '') + ': "' + String(pesan || '').substring(0, 500) + '"\n\nBalasan:'
+      );
+      t = String(t || '').trim().replace(/^["']|["']$/g, '');
+      if(t) return t.substring(0, 500);
+    } catch(e){ /* jatuh ke template */ }
+    return kmAiReplyTemplate(pesan);
   }
   function kmAvatar(nama){ return esc((nama||'?').trim().charAt(0).toUpperCase()); }
   async function kmLoad(){
@@ -2325,49 +2558,68 @@
         '</div>' + chip + '</div></div>';
     }).join('');
   }
-  window.kmGenSatu = function(id){
+  window.kmGenSatu = async function(id){
     var k = kmState.list.find(function(x){ return x.id===id; });
     if(!k) return;
-    k.balasan = kmAiReply(k.pesan);
+    ngtToast('AI menulis balasan&hellip;');
+    k.balasan = await kmAiReply(k.pesan, k.nama, k.halaman);
     var ta = document.getElementById('kmBalas_' + id);
     if(ta) ta.value = k.balasan;
     DB.komentar.update(id, { balasan:k.balasan });
     ngtToast('Balasan AI <b>dibuat</b> — silakan edit lalu kirim');
   };
-  window.kmGenSemua = function(){
+  window.kmGenSemua = async function(){
     var n = 0;
-    kmState.list.forEach(function(k){
-      if(k.status!=='terkirim' && !k.balasan){ k.balasan = kmAiReply(k.pesan); DB.komentar.update(k.id, { balasan:k.balasan }); n++; }
-    });
+    ngtToast('AI menulis balasan&hellip;');
+    for(var i = 0; i < kmState.list.length; i++){
+      var k = kmState.list[i];
+      if(k.status!=='terkirim' && !k.balasan){ k.balasan = await kmAiReply(k.pesan, k.nama, k.halaman); DB.komentar.update(k.id, { balasan:k.balasan }); n++; }
+    }
     kmRender();
     ngtToast(n ? ('<b>'+n+'</b> balasan AI dibuat') : 'Semua komentar sudah ada balasannya');
   };
-  window.kmKirim = function(id){
+  // Kirim balasan sebagai komentar balasan di Facebook (API asli)
+  async function kmKirimFb(k, balasan){
+    var hals = await DB.halaman.list() || [];
+    var h = hals.find(function(x){ return x.nama === k.halaman; });
+    if(!h || !h.token) throw new Error('Token halaman <b>' + esc(k.halaman || '') + '</b> tidak ditemukan di Setting');
+    if(!k.id) throw new Error('ID komentar tidak valid');
+    await FB.api(k.id, h.token, 'comments', 'POST', { message: balasan });
+  }
+  window.kmKirim = async function(id){
     var k = kmState.list.find(function(x){ return x.id===id; });
     if(!k) return;
     var ta = document.getElementById('kmBalas_' + id);
-    var balasan = ta ? ta.value : (k.balasan || '');
+    var balasan = (ta ? ta.value : (k.balasan || '')).trim();
+    if(!balasan){ ngtToast('Isi dulu <b>balasannya</b>'); return; }
+    ngtToast('Mengirim balasan ke Facebook&hellip;');
+    try { await kmKirimFb(k, balasan); }
+    catch(e){ ngtToast('Gagal kirim ke Facebook: ' + e.message); return; }
     kmRiwayatSave({ id:k.id, nama:k.nama, halaman:k.halaman, waktu:k.waktu, pesan:k.pesan, balasan:balasan, terkirim:new Date().toLocaleString('id-ID') });
     DB.komentar.update(id, { balasan:balasan, status:'terkirim' }); // backend otomatis menghapus barisnya
     kmState.list = kmState.list.filter(function(x){ return x.id !== id; });
     kmRender();
-    ngtToast('Balasan ke <b>' + esc(k.nama) + '</b> terkirim (simulasi) & dihapus dari daftar');
+    ngtToast('Balasan ke <b>' + esc(k.nama) + '</b> terkirim &#10003;');
   };
-  window.kmKirimSemua = function(){
-    var n = 0, ids = [];
-    kmState.list.forEach(function(k){
-      if(k.status!=='terkirim'){
-        var ta = document.getElementById('kmBalas_' + k.id);
-        var balasan = ta ? ta.value : (k.balasan || kmAiReply(k.pesan));
+  window.kmKirimSemua = async function(){
+    var n = 0, gagal = 0, ids = [];
+    ngtToast('Mengirim balasan ke Facebook&hellip;');
+    for(var i = 0; i < kmState.list.length; i++){
+      var k = kmState.list[i];
+      if(k.status==='terkirim') continue;
+      var ta = document.getElementById('kmBalas_' + k.id);
+      var balasan = ((ta ? ta.value : '') || k.balasan || '').trim();
+      if(!balasan) balasan = await kmAiReply(k.pesan, k.nama, k.halaman);
+      try {
+        await kmKirimFb(k, balasan);
         kmRiwayatSave({ id:k.id, nama:k.nama, halaman:k.halaman, waktu:k.waktu, pesan:k.pesan, balasan:balasan, terkirim:new Date().toLocaleString('id-ID') });
         DB.komentar.update(k.id, { balasan:balasan, status:'terkirim' }); // backend otomatis menghapus barisnya
-        ids.push(k.id);
-        n++;
-      }
-    });
+        ids.push(k.id); n++;
+      } catch(e){ gagal++; }
+    }
     kmState.list = kmState.list.filter(function(x){ return ids.indexOf(x.id) < 0; });
     kmRender();
-    ngtToast(n ? ('<b>'+n+'</b> balasan terkirim (simulasi) & dihapus dari daftar') : 'Tidak ada yang perlu dikirim');
+    ngtToast(n ? ('<b>'+n+'</b> balasan terkirim &#10003;' + (gagal ? ' <span class="ngt-muted">(' + gagal + ' gagal)</span>' : '')) : (gagal ? 'Semua <b>gagal</b> dikirim — periksa token halaman' : 'Tidak ada yang perlu dikirim'));
   };
   // Auto-polling: produksi = cek komentar baru dari Web App tiap 60 detik;
   // dummy = simulasi komentar baru tiap 20 detik
@@ -2392,10 +2644,13 @@
       kmState.timer = setInterval(function(){
         var c = contoh[i % contoh.length]; i++;
         var halaman = (kmState.list[0] && kmState.list[0].halaman) || 'Folk Jateng';
-        DB.komentar.tambah({ nama:c.nama, halaman:halaman, waktu:'baru saja', pesan:c.pesan,
-          balasan: document.getElementById('kmAutoReply').checked ? kmAiReply(c.pesan) : '', status:'menunggu' })
-          .then(function(){ return kmLoad(); })
-          .then(function(){ ngtToast('Komentar baru dari <b>' + esc(c.nama) + '</b>'); });
+        (async function(){
+          var b = '';
+          if(document.getElementById('kmAutoReply').checked) b = await kmAiReply(c.pesan, c.nama, halaman);
+          await DB.komentar.tambah({ nama:c.nama, halaman:halaman, waktu:'baru saja', pesan:c.pesan, balasan:b, status:'menunggu' });
+          await kmLoad();
+          ngtToast('Komentar baru dari <b>' + esc(c.nama) + '</b>');
+        })();
       }, 20000);
       ngtToast('<b>Auto-polling ON</b> — cek komentar baru tiap 20 detik (simulasi)');
     } else {
@@ -2430,11 +2685,8 @@
       halaman: document.getElementById('anHalaman').value,
       jadwal: document.getElementById('anJadwal').value.trim() || 'Belum dijadwalkan',
       tipe: 'Manual'
-    }).then(function(){
-      document.getElementById('anJudul').value = '';
-      document.getElementById('anJadwal').value = '';
-      anMuat();
-      ngtToast('Jadwal <b>ditambahkan</b>');
+    }).then(function(ok){
+      if(ok){ document.getElementById('anJudul').value = ''; document.getElementById('anJadwal').value = ''; }
     });
   };
   window.anHapus = function(id){
@@ -2449,10 +2701,99 @@
     ngtToast('Jadwal <b>dihapus</b> (contoh)');
   };
 
+  // ============ INSIGHT: data asli Facebook + analisis AI ============
+  var insCache = null;
+  function insAngka(n){
+    n = Number(n) || 0;
+    if(n >= 1000000) return (n/1000000).toFixed(1).replace('.', ',') + 'jt';
+    if(n >= 1000) return (n/1000).toFixed(1).replace('.', ',') + 'rb';
+    return String(n);
+  }
+  async function insSiap(){
+    var sel = document.getElementById('insHalaman');
+    if(!sel) return;
+    if(!sel.options.length){
+      var hp = await DB.halaman.list() || [];
+      sel.innerHTML = hp.map(function(h){ return '<option>' + esc(h.nama) + '</option>'; }).join('');
+      if(hp.length) insMuat();
+    }
+  }
+  window.insMuat = async function(){
+    var sel = document.getElementById('insHalaman');
+    var nama = sel ? sel.value : '';
+    var hp = await DB.halaman.list() || [];
+    var h = hp.find(function(x){ return x.nama === nama; });
+    var body = document.getElementById('insBody');
+    document.getElementById('insAiCard').style.display = 'none';
+    insCache = null;
+    if(!h || !h.pageId || !h.token){ body.innerHTML = '<div class="ngt-muted" style="text-align:center;padding:40px">Hubungkan <b>halaman Facebook</b> di Setting dulu.</div>'; return; }
+    body.innerHTML = '<div class="ngt-muted" style="text-align:center;padding:40px">Mengambil data insight&hellip;</div>';
+    try {
+      var met = await FB.api(h.pageId, h.token, 'insights', 'GET', { metric:'page_impressions_unique,page_engaged_users,page_post_engagements', period:'week' });
+      var vals = {};
+      (met.data || []).forEach(function(m){
+        var v = (m.values || []).map(function(x){ return Number(x.value) || 0; });
+        vals[m.name] = v.length ? v[v.length-1] : 0;
+      });
+      var reach = vals.page_impressions_unique || 0;
+      var engaged = vals.page_engaged_users || 0;
+      var interag = vals.page_post_engagements || 0;
+      var pj = await FB.api(h.pageId, h.token, 'posts', 'GET', { fields:'id,message,created_time', limit:10 });
+      var posts = (pj.data || []).map(function(p){
+        return { id:p.id, judul:(p.message || '(tanpa teks)').slice(0, 90), waktu:p.created_time ? new Date(p.created_time).toLocaleDateString('id-ID', { day:'numeric', month:'short' }) : '', reach:0 };
+      });
+      // Ambil reach per postingan (5 teratas saja agar hemat)
+      for(var i = 0; i < Math.min(posts.length, 5); i++){
+        try {
+          var pi = await FB.api(posts[i].id, h.token, 'insights', 'GET', { metric:'post_impressions_unique', period:'lifetime' });
+          var vv = (((pi.data || [])[0] || {}).values || []);
+          posts[i].reach = vv.length ? (Number(vv[vv.length-1].value) || 0) : 0;
+        } catch(e){}
+      }
+      posts.sort(function(a,b){ return b.reach - a.reach; });
+      insCache = { halaman:h.nama, reach:reach, engaged:engaged, interag:interag, posts:posts.slice(0,5) };
+      var maks = Math.max.apply(null, posts.map(function(p){ return p.reach; }).concat([1]));
+      body.innerHTML =
+        '<div class="ngt-stats">' +
+        '<div class="ngt-card ngt-stat"><div class="ico">👁️</div><div class="num">' + insAngka(reach) + '</div><div class="lbl">Jangkauan/minggu</div></div>' +
+        '<div class="ngt-card ngt-stat"><div class="ico">❤️</div><div class="num">' + insAngka(engaged) + '</div><div class="lbl">Pengguna terlibat</div></div>' +
+        '<div class="ngt-card ngt-stat"><div class="ico">💬</div><div class="num">' + insAngka(interag) + '</div><div class="lbl">Interaksi postingan</div></div>' +
+        '<div class="ngt-card ngt-stat"><div class="ico">🚀</div><div class="num">' + posts.length + '</div><div class="lbl">Postingan terpantau</div></div>' +
+        '</div>' +
+        '<div class="ngt-card"><h3>🏆 Postingan Teratas</h3><div class="ngt-list">' +
+        (posts.length ? posts.map(function(p){
+          var pct = Math.round(p.reach / maks * 100);
+          return '<div><div style="display:flex;justify-content:space-between;font-size:14px;gap:10px"><b style="color:#fff">' + esc(p.judul) + '</b><span class="ngt-muted" style="white-space:nowrap">' + insAngka(p.reach) + ' reach</span></div><div class="ngt-bar"><i style="width:' + pct + '%"></i></div></div>';
+        }).join('') : '<div class="ngt-muted">Belum ada data postingan.</div>') +
+        '</div><p class="ngt-muted" style="font-size:12px;margin:10px 0 0">Butuh izin <b>read_insights</b> pada token. Jika angka 0 semua, periksa izin token di Meta Developer.</p></div>';
+    } catch(e){
+      body.innerHTML = '<div class="ngt-muted" style="text-align:center;padding:40px">Gagal memuat insight: ' + esc(e.message) + '<br><button class="ngt-btn small" style="margin-top:12px" onclick="insMuat()">Coba lagi</button></div>';
+    }
+  };
+  window.insAnalisis = async function(){
+    if(!insCache){ ngtToast('Muat dulu <b>datanya</b>'); return; }
+    var card = document.getElementById('insAiCard'), out = document.getElementById('insAiBody');
+    card.style.display = ''; out.textContent = 'AI menganalisis…';
+    try {
+      var ringkas = 'Halaman: ' + insCache.halaman + '\nJangkauan/minggu: ' + insCache.reach +
+        '\nPengguna terlibat: ' + insCache.engaged + '\nInteraksi postingan: ' + insCache.interag +
+        '\nPostingan teratas:\n' + insCache.posts.map(function(p, i){ return (i+1) + '. "' + p.judul + '" (' + p.reach + ' reach)'; }).join('\n');
+      var t = await aiGemini(
+        'Kamu adalah konsultan media sosial. Berdasarkan data insight halaman Facebook berikut, berikan analisis singkat ' +
+        'dalam bahasa Indonesia santai (maksimal 150 kata): 1) apa yang berjalan baik, 2) satu masalah utama, ' +
+        '3) tiga saran konten konkret untuk minggu depan. Jangan mengulang angka mentah semua — fokus pada insight.\n\n' + ringkas
+      );
+      out.textContent = String(t || '').trim();
+    } catch(e){ out.textContent = 'Gagal: ' + (e.message || e); }
+  };
   function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function hariIni(){ var d=new Date(); return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
   // Init akhir: kalau sesi sudah ada (mis. reload normal), langsung masuk aplikasi
-  if(ngtSession()){ ngtEnterApp(); }
+  (function(){
+    var s0 = ngtSession();
+    if(s0 && s0._auth) Supa.authT = { access:s0._auth.access, refresh:s0._auth.refresh, exp:s0._auth.exp };
+    if(s0){ ngtEnterApp(); }
+  })();
 })();
 
 })();
