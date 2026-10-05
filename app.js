@@ -2732,13 +2732,19 @@
     if(!h || !h.pageId || !h.token){ body.innerHTML = '<div class="ngt-muted" style="text-align:center;padding:40px">Hubungkan <b>halaman Facebook</b> di Setting dulu.</div>'; return; }
     body.innerHTML = '<div class="ngt-muted" style="text-align:center;padding:40px">Mengambil data insight&hellip;</div>';
     try {
-      var met = await FB.api(h.pageId, h.token, 'insights', 'GET', { metric:'page_total_media_view_unique,page_engaged_users,page_post_engagements', period:'week' });
+      // Minta metric satu per satu (Meta sering hapus metric; satu gagal tidak boleh gugurkan semua)
       var vals = {};
-      (met.data || []).forEach(function(m){
-        var v = (m.values || []).map(function(x){ return Number(x.value) || 0; });
-        vals[m.name] = v.length ? v[v.length-1] : 0;
-      });
-      var reach = vals.page_total_media_view_unique || 0;
+      var METRICS = ['page_total_media_view_unique','page_engaged_users','page_post_engagements','page_views_total','page_fans'];
+      for(var mi = 0; mi < METRICS.length; mi++){
+        try {
+          var mr = await FB.api(h.pageId, h.token, 'insights', 'GET', { metric:METRICS[mi], period:'week' });
+          (mr.data || []).forEach(function(m){
+            var v = (m.values || []).map(function(x){ return Number(x.value) || 0; });
+            vals[m.name] = v.length ? v[v.length-1] : 0;
+          });
+        } catch(e){ /* metric tidak valid / tidak ada izin — lewati */ }
+      }
+      var reach = vals.page_total_media_view_unique || vals.page_views_total || 0;
       var engaged = vals.page_engaged_users || 0;
       var interag = vals.page_post_engagements || 0;
       var pj = await FB.api(h.pageId, h.token, 'posts', 'GET', { fields:'id,message,created_time', limit:10 });
@@ -2748,8 +2754,10 @@
       // Ambil reach per postingan (5 teratas saja agar hemat)
       for(var i = 0; i < Math.min(posts.length, 5); i++){
         try {
-          var pi = await FB.api(posts[i].id, h.token, 'insights', 'GET', { metric:'post_total_media_view_unique', period:'lifetime' });
-          var vv = (((pi.data || [])[0] || {}).values || []);
+          var pi = null;
+          try { pi = await FB.api(posts[i].id, h.token, 'insights', 'GET', { metric:'post_total_media_view_unique', period:'lifetime' }); }
+          catch(e){ try { pi = await FB.api(posts[i].id, h.token, 'insights', 'GET', { metric:'post_impressions', period:'lifetime' }); } catch(e2){} }
+          var vv = ((((pi || {}).data || [])[0] || {}).values || []);
           posts[i].reach = vv.length ? (Number(vv[vv.length-1].value) || 0) : 0;
         } catch(e){}
       }
