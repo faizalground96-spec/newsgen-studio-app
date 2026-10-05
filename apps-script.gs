@@ -341,11 +341,11 @@ function custAppend(pid, sheetName, row) {
 
 /* ================= BERITA: RSS + AMBIL URL ================= */
 var RSS_FEEDS = [
-  { nama: 'Antara',        url: 'https://www.antaranews.com/rss/terkini.xml', kategori: '' },
-  { nama: 'CNN Indonesia', url: 'https://www.cnnindonesia.com/rss',           kategori: '' },
-  { nama: 'Liputan6',      url: 'https://www.liputan6.com/rss',               kategori: '' },
-  { nama: 'Detik',         url: 'https://rss.detik.com/index.php/detikcom',   kategori: '' },
-  { nama: 'Okezone',       url: 'https://rss.okezone.com/',                   kategori: '' }
+  { nama: 'Google News',        url: 'https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id', kategori: '' },
+  { nama: 'Google News', url: 'https://news.google.com/rss/search?q=politik+Indonesia&hl=id&gl=ID&ceid=ID:id',           kategori: '' },
+  { nama: 'Google News',      url: 'https://news.google.com/rss/search?q=ekonomi+Indonesia&hl=id&gl=ID&ceid=ID:id',               kategori: '' },
+  { nama: 'Google News',         url: 'https://news.google.com/rss/search?q=olahraga+Indonesia&hl=id&gl=ID&ceid=ID:id',   kategori: '' },
+  { nama: 'Google News',       url: 'https://news.google.com/rss/search?q=teknologi+Indonesia&hl=id&gl=ID&ceid=ID:id',                   kategori: '' }
 ];
 
 function rssTeks(el, nama) {
