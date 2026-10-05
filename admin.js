@@ -286,17 +286,20 @@
   window.ngaLogout = function(){ ngaSetSession(null); location.reload(); };
 
   /* ============ DATA LAYER ============ */
+  // Normalisasi kolom Supabase (lowercase di DB: apikey) <-> camelCase di aplikasi
+  function ngaNormPelanggan(r){ if(r){ r.apiKey = r.apiKey || r.apikey || ''; } return r; }
+  function ngaNormPelangganDb(p){ var o = Object.assign({}, p); if(o.apiKey !== undefined && o.apikey === undefined){ o.apikey = o.apiKey; delete o.apiKey; } return o; }
   const DB = {
     pelanggan: {
-      list(){ return Supa.req('pelanggan','GET',null,'?select=*&order=id.desc'); },
-      tambah(p){ return Supa.insert('pelanggan', p); },
-      update(id, patch){ return Supa.update('pelanggan', id, patch); },
+      list(){ return Supa.req('pelanggan','GET',null,'?select=*&order=id.desc').then(function(rows){ return (rows || []).map(ngaNormPelanggan); }); },
+      tambah(p){ return Supa.insert('pelanggan', ngaNormPelangganDb(p)); },
+      update(id, patch){ return Supa.update('pelanggan', id, ngaNormPelangganDb(patch)); },
       hapus(id){ return Supa.remove('pelanggan', id); }
     },
     halaman: {
-      list(pid){ return Supa.req('halaman','GET',null,'?select=*&pelanggan_id=eq.'+encodeURIComponent(pid)+'&order=id'); },
-      tambah(h){ return Supa.insert('halaman', h); },
-      update(id, patch){ return Supa.update('halaman', id, patch); },
+      list(pid){ return Supa.req('halaman','GET',null,'?select=*&pelanggan_id=eq.'+encodeURIComponent(pid)+'&order=id').then(function(rows){ return (rows || []).map(function(r){ r.pageId = r.pageId || r.pageid || ''; return r; }); }); },
+      tambah(h){ var row = Object.assign({}, h); if(row.pageId !== undefined && row.pageid === undefined){ row.pageid = row.pageId; delete row.pageId; } return Supa.insert('halaman', row); },
+      update(id, patch){ var p = Object.assign({}, patch); if(p.pageId !== undefined && p.pageid === undefined){ p.pageid = p.pageId; delete p.pageId; } return Supa.update('halaman', id, p); },
       hapus(id){ return Supa.remove('halaman', id); }
     }
   };

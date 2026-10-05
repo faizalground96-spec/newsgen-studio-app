@@ -1011,12 +1011,19 @@
     halaman: {
       list: function(){
         if(CONFIG.dummy) return dummyCRUD('halaman').list();
-        if(Supa.ok()) return Supa.req('halaman','GET',null,'?select=*&pelanggan_id=eq.'+ngtPid()).catch(function(){ return Sheet.ok() ? Sheet.list('Halaman') : backendBelum('supabase'); });
+        if(Supa.ok()) return Supa.req('halaman','GET',null,'?select=*&pelanggan_id=eq.'+ngtPid()).then(function(rows){
+          return (rows || []).map(function(r){ r.pageId = r.pageId || r.pageid || ''; return r; });
+        }).catch(function(){ return Sheet.ok() ? Sheet.list('Halaman') : backendBelum('supabase'); });
         return backendBelum('supabase');
       },
       tambah: function(h){
         if(CONFIG.dummy) return dummyCRUD('halaman').tambah(h);
-        if(Supa.ok()) return Supa.insert('halaman', Object.assign({pelanggan_id: ngtPid()}, h)).catch(function(){ return Sheet.ok() ? Sheet.append('Halaman', h) : backendBelum('supabase'); });
+        if(Supa.ok()){
+          var row = Object.assign({ pelanggan_id: ngtPid() }, h);
+          if(!row.id) row.id = 'h' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+          if(row.pageId !== undefined && row.pageid === undefined){ row.pageid = row.pageId; delete row.pageId; }
+          return Supa.insert('halaman', row).catch(function(){ return Sheet.ok() ? Sheet.append('Halaman', h) : backendBelum('supabase'); });
+        }
         return backendBelum('supabase');
       },
       hapus: function(id){
@@ -1030,12 +1037,16 @@
         if(CONFIG.dummy) return Promise.resolve(dummyLoad('ai_' + ngtPid(), DUMMY_DB.ai));
         var s = ngtSession();
         if(s && (s.model || s.apiKey)) return Promise.resolve({ model:s.model || '', apiKey:s.apiKey || '' });
-        if(Supa.ok()) return Supa.req('pelanggan','GET',null,'?select=model,apiKey&id=eq.'+ngtPid()).then(function(r){ return (r && r[0]) || null; }).catch(function(){ return backendBelum('supabase'); });
+        if(Supa.ok()) return Supa.req('pelanggan','GET',null,'?select=model,apikey&id=eq.'+ngtPid()).then(function(r){
+          var row = (r && r[0]) || null;
+          if(row) return { model: row.model || '', apiKey: row.apikey || '' };
+          return null;
+        }).catch(function(){ return backendBelum('supabase'); });
         return backendBelum('supabase');
       },
       simpan: function(d){
         if(CONFIG.dummy){ dummySave('ai_' + ngtPid(), d); return Promise.resolve(d); }
-        if(Supa.ok()) return Supa.update('pelanggan', ngtPid(), { model:d.model, apiKey:d.apiKey }).then(function(){
+        if(Supa.ok()) return Supa.update('pelanggan', ngtPid(), { model:d.model, apikey:d.apiKey }).then(function(){
           var s = ngtSession();
           if(s){ s.model = d.model; s.apiKey = d.apiKey; try { sessionStorage.setItem('ngt_session', JSON.stringify(s)); } catch(e){} }
           return d;
