@@ -1649,14 +1649,15 @@
     s.firstComments = { marah:baris[0]||'', nanya:baris[1]||'', setuju:baris[2]||'', julid:baris[3]||'' };
   }
   window.aiGenerate = async function(){
-    var teks = document.getElementById('aiSumber').value.trim();
-    if(!teks){ ngtToast('Tempel dulu <b>teks beritanya</b>'); return; }
-    var pages = (await DB.halaman.list() || []).filter(function(h){ return h && h.nama; });
-    if(!pages.length){ ngtToast('Tambah dulu <b>halaman</b> di Setting'); return; }
     var btn = document.getElementById('aiGenBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="ngt-spin"></span> AI menulis untuk ' + pages.length + ' halaman&hellip;';
+    var jalan = false;
     try {
+      var teks = document.getElementById('aiSumber').value.trim();
+      if(!teks){ ngtToast('Tempel dulu <b>teks beritanya</b>'); return; }
+      var pages = (await DB.halaman.list() || []).filter(function(h){ return h && h.nama; });
+      if(!pages.length){ ngtToast('Tambah dulu <b>halaman</b> di Setting'); return; }
+      btn.disabled = true; jalan = true;
+      btn.innerHTML = '<span class="ngt-spin"></span> AI menulis untuk ' + pages.length + ' halaman&hellip;';
       await aiGeminiKey(); // validasi kunci dulu (pesan error jelas)
       var toneMap = { viral:'VIRAL — soroti fakta paling mengejutkan/penting', marah:'GERAM — soroti fakta paling tidak adil/mengecewakan', sedih:'HARU — soroti fakta paling menyentuh', kagum:'KAGUM — soroti fakta paling tidak terduga', lucu:'SATIR — soroti ironi paling menggelikan', bangga:'BANGGA — soroti fakta paling membanggakan/inspiratif' };
       var daftarHal = pages.map(function(h){ return '- ' + h.nama; }).join('\n');
@@ -1677,10 +1678,10 @@
       aiRenderSets();
       ngtToast('Siap untuk <b>' + aiW.sets.length + '</b> halaman — pilih per halaman');
     } catch(e){
-      ngtToast('Gagal generate: ' + esc(e.message));
+      ngtToast('Gagal generate: ' + esc((e && e.message) || e));
+    } finally {
+      if(jalan){ btn.disabled = false; btn.innerHTML = '&#10024; Generate dengan AI'; }
     }
-    btn.disabled = false;
-    btn.innerHTML = '&#10024; Generate dengan AI';
   };
   function aiRenderSets(){
     var tabs = document.getElementById('aiSetTabs');
