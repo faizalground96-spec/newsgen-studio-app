@@ -375,7 +375,7 @@ function rssBerita() {
     try {
       var res = UrlFetchApp.fetch(f.url, { muteHttpExceptions: true, followRedirects: true, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } });
       if (res.getResponseCode() !== 200) return;
-      var xmlBersih = res.getContentText().replace(/&nbsp;/g, ' '); var root = XmlService.parse(xmlBersih).getRootElement();
+      var xmlBersih = res.getContentText().replace(/&nbsp;/g, ' '); xmlBersih = xmlBersih.replace(/&(?!amp;|lt;|gt;|quot;|apos;)[a-zA-Z0-9#]+;/g, ' '); var root = XmlService.parse(xmlBersih).getRootElement();
       var els = [];
       var ch = root.getChild('channel');
       if (ch) els = ch.getChildren('item');
