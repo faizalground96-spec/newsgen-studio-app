@@ -278,9 +278,11 @@
       return res.json();
     },
     async post(base, action, data){
+      var body = Object.assign({ action: action }, data || {});
+      if(Supa.authT && Supa.authT.access) body.jwt = Supa.authT.access;
       const res = await fetch(base, {
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action }, data || {}))
+        body: JSON.stringify(body)
       });
       if(!res.ok) throw new Error('WebApp ' + res.status);
       return res.json();

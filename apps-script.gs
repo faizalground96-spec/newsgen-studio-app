@@ -143,8 +143,11 @@ function doGet(e) {
     if (p['hub.verify_token'] === token && token !== '') return teks(p['hub.challenge'] || '');
     return teks('token salah').setResponseCode(403);
   }
-  // 2) API baca untuk dashboard
+  // 2) API baca untuk dashboard (komentar/arsip/config wajib JWT + pid milik user)
   var action = p.action || '', pid = p.pid || '';
+  if (action === 'komentar' || action === 'arsip' || action === 'config') {
+    if (!webappCekAkses_(p.jwt || '', pid)) return json({ ok: false, error: 'akses ditolak' });
+  }
   if (action === 'komentar') return json({ ok: true, rows: komentarList(pid) });
   if (action === 'arsip')    return json({ ok: true, rows: arsipList(pid) });
   if (action === 'config')   return json({ ok: true, config: configGet(pid) });
@@ -159,9 +162,16 @@ function doPost(e) {
   catch (err) { return json({ ok: false, error: 'bukan JSON' }); }
   // 3) Event dari Facebook
   if (data.object === 'page') { fbHandleEvent(data); return json({ ok: true }); }
-  // 4) API tulis untuk dashboard
+  // 4) API tulis untuk dashboard (wajib JWT + pid milik user, kecuali webhook FB & auth admin)
   var action = data.action, pid = data.pid || '';
   if (!pid) return json({ ok: false, error: 'pid wajib' });
+  var AKSI_LINDUNG = ['komentar_update','komentar_hapus','config_set','arsip','list','append','pelanggan_register'];
+  if (AKSI_LINDUNG.indexOf(action) >= 0) {
+    var jwtOk = (action === 'pelanggan_register')
+      ? authVerifikasiAdmin(data.jwt || data.admin_jwt || '')
+      : webappCekAkses_(data.jwt || '', pid);
+    if (!jwtOk) return json({ ok: false, error: 'akses ditolak' });
+  }
   if (action === 'komentar_update') return json({ ok: true, row: komentarUpdate(pid, data.id, data.patch || {}) });
   if (action === 'komentar_hapus')  return json({ ok: true, hapus: komentarHapus(pid, data.id) });
   if (action === 'config_set')     return json({ ok: true, config: configSet(pid, data.kunci, data.nilai) });
@@ -349,11 +359,11 @@ function custAppend(pid, sheetName, row) {
 
 /* ================= BERITA: RSS + AMBIL URL ================= */
 var RSS_FEEDS = [
-  { nama: 'Google News',        url: 'https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id', kategori: '' },
-  { nama: 'Google News', url: 'https://news.google.com/rss/search?q=politik+Indonesia&hl=id&gl=ID&ceid=ID:id',           kategori: '' },
-  { nama: 'Google News',      url: 'https://news.google.com/rss/search?q=ekonomi+Indonesia&hl=id&gl=ID&ceid=ID:id',               kategori: '' },
-  { nama: 'Google News',         url: 'https://news.google.com/rss/search?q=olahraga+Indonesia&hl=id&gl=ID&ceid=ID:id',   kategori: '' },
-  { nama: 'Google News',       url: 'https://news.google.com/rss/search?q=teknologi+Indonesia&hl=id&gl=ID&ceid=ID:id',                   kategori: '' }
+  { nama: 'Antara',        url: 'https://www.antaranews.com/rss/terkini.xml', kategori: '' },
+  { nama: 'CNN Indonesia', url: 'https://www.cnnindonesia.com/rss',           kategori: '' },
+  { nama: 'Liputan6',      url: 'https://www.liputan6.com/rss',               kategori: '' },
+  { nama: 'Detik',         url: 'https://rss.detik.com/index.php/detikcom',   kategori: '' },
+  { nama: 'Okezone',       url: 'https://rss.okezone.com/',                   kategori: '' }
 ];
 
 function rssTeks(el, nama) {
@@ -381,9 +391,9 @@ function rssBerita() {
   var items = [];
   RSS_FEEDS.forEach(function (f) {
     try {
-      var res = UrlFetchApp.fetch(f.url, { muteHttpExceptions: true, followRedirects: true, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } });
+      var res = UrlFetchApp.fetch(f.url, { muteHttpExceptions: true, followRedirects: true });
       if (res.getResponseCode() !== 200) return;
-      var xmlBersih = res.getContentText().replace(/&nbsp;/g, ' '); xmlBersih = xmlBersih.replace(/&(?!amp;|lt;|gt;|quot;|apos;)[a-zA-Z0-9#]+;/g, ' '); var root = XmlService.parse(xmlBersih).getRootElement();
+      var root = XmlService.parse(res.getContentText()).getRootElement();
       var els = [];
       var ch = root.getChild('channel');
       if (ch) els = ch.getChildren('item');
@@ -501,4 +511,44 @@ function authUbahPassword(email, password) {
       return { ok: false, error: 'HTTP ' + res2.getResponseCode() };
     return { ok: true };
   } catch (e) { return { ok: false, error: String(e).substring(0, 140) }; }
+}
+
+/* ============ VERIFIKASI JWT UNTUK WEB APP ============
+   Setiap action yang akses data pelanggan wajib sertakan JWT user.
+   Web App verifikasi ke Supabase dan pastikan pid milik user tersebut. */
+function sbQuery_(tabel, query) {
+  var key = sbServiceKey_();
+  if (!key) return [];
+  try {
+    var res = UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + tabel + '?' + query, {
+      method: 'get', muteHttpExceptions: true,
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (res.getResponseCode() !== 200) return [];
+    return JSON.parse(res.getContentText() || '[]');
+  } catch (e) { return []; }
+}
+
+function webappUser_(jwt) {
+  if (!jwt) return null;
+  var key = sbServiceKey_();
+  if (!key) return null;
+  try {
+    var res = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/user', {
+      method: 'get', muteHttpExceptions: true,
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + jwt }
+    });
+    if (res.getResponseCode() !== 200) return null;
+    return JSON.parse(res.getContentText() || '{}');
+  } catch (e) { return null; }
+}
+
+/* Cek apakah JWT valid dan boleh akses pid. Admin boleh akses semua pid. */
+function webappCekAkses_(jwt, pid) {
+  var u = webappUser_(jwt);
+  if (!u || !u.email) return false;
+  if (u.app_metadata && u.app_metadata.role === 'admin') return true;
+  if (!pid) return false;
+  var rows = sbQuery_('pelanggan', 'select=id&email=eq.' + encodeURIComponent(u.email) + '&id=eq.' + encodeURIComponent(pid));
+  return !!(rows && rows.length > 0);
 }

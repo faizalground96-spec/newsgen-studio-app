@@ -796,15 +796,18 @@
     ok(){ return !!this.base(); },
     async callg(params){
       var q = Object.keys(params).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      if(Supa.authT && Supa.authT.access) q += '&jwt=' + encodeURIComponent(Supa.authT.access);
       const res = await fetch(this.base() + '?' + q);
       if(!res.ok) throw new Error('WebApp ' + res.status);
       return res.json();
     },
     async callp(action, data){
+      var body = Object.assign({ action: action, pid: ngtPid() }, data || {});
+      if(Supa.authT && Supa.authT.access) body.jwt = Supa.authT.access;
       const res = await fetch(this.base(), {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action, pid: ngtPid() }, data || {}))
+        body: JSON.stringify(body)
       });
       if(!res.ok) throw new Error('WebApp ' + res.status);
       return res.json();
@@ -980,7 +983,7 @@
     var base = cfg.url.replace(/\/$/, '');
     const res = await fetch(base + '/storage/v1/object/newsgen-media/' + path, {
       method: 'POST',
-      headers: { apikey:cfg.anonKey, Authorization:'Bearer ' + cfg.anonKey, 'Content-Type':blob.type || 'application/octet-stream' },
+      headers: { apikey:cfg.anonKey, Authorization:'Bearer ' + ((Supa.authT && Supa.authT.access) ? Supa.authT.access : cfg.anonKey), 'Content-Type':blob.type || 'application/octet-stream' },
       body: blob
     });
     if(!res.ok) throw new Error('Upload media gagal (HTTP ' + res.status + ') — bucket newsgen-media belum siap?');
