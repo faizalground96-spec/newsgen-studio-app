@@ -1244,10 +1244,18 @@
     var key = document.getElementById('ngtAiKey').value.trim();
     var model = document.getElementById('ngtAiModel').value;
     if(!key){ ngtToast('Isi <b>API key</b> dulu'); return; }
+    if(model.indexOf('gpt') === 0){ ngtToast('Model GPT belum didukung — pilih <b>Gemini</b>'); return; }
+    if(!/^AIza/.test(key)){ ngtToast('API key Gemini biasanya diawali <b>AIza</b> — periksa lagi'); return; }
     ngtToast('Mengetes koneksi AI&hellip;');
-    setTimeout(function(){
-      if(CONFIG.dummy) ngtToast('Koneksi <b>' + esc(model) + '</b> berhasil &#10003; (simulasi)');
-    }, 1200);
+    var t0 = Date.now();
+    try {
+      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key),
+        { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ contents:[{ parts:[{ text:'Balas hanya dengan kata: ok' }] }] }) });
+      var j = await res.json().catch(function(){ return {}; });
+      if(!res.ok) throw new Error((j.error && j.error.message) || ('Gemini HTTP ' + res.status));
+      ngtToast('Koneksi <b>' + esc(model) + '</b> berhasil &#10003; <span class="ngt-muted">(' + ((Date.now()-t0)/1000).toFixed(1) + ' dtk)</span>');
+    } catch(e){ ngtToast('Gagal: ' + esc(e.message)); }
   };
   window.ngtSimpanWebapp = async function(){
     var s = ngtSession();
