@@ -95,6 +95,7 @@
   .ngt-newscard .t-cuaca { background:linear-gradient(135deg,#334155,#0f172a); }
   .ngt-newscard .t-kuliner { background:linear-gradient(135deg,#92400e,#451a03); }
   .ngt-newscard .t-warga { background:linear-gradient(135deg,#14532d,#052e16); }
+  .ngt-newscard .t-nasional { background:linear-gradient(135deg,#0e7490,#164e63); }
   .ngt-newscard .body { padding:16px; flex:1; display:flex; flex-direction:column; gap:8px; }
   .ngt-newscard h4 { color:#fff; font-size:15px; line-height:1.45; margin:0; }
   .ngt-newscard p { font-size:13px; color:#a1a1aa; margin:0; flex:1; }
@@ -230,7 +231,7 @@
           <div class="sub">Kelola konten beritamu dari satu tempat</div>
         </div>
       </div>
-      <button class="ngt-btn small" onclick="ngtToast('Hubungkan halaman — fitur penuh menyusul')">＋ Hubungkan Halaman</button>
+      <button class="ngt-btn small" onclick="ngtGo('pengaturan')">＋ Hubungkan Halaman</button>
     </header>
 
     <div class="ngt-content">
@@ -238,17 +239,12 @@
       <!-- NEWS AGGREGATOR -->
       <section class="ngt-page active" id="page-radar">
         <div class="ngt-title">News Aggregator</div>
-        <div class="ngt-desc">Berita terbaru yang lagi panas. <span class="ngt-badge-contoh">DATA CONTOH</span></div>
+        <div class="ngt-desc">Berita terbaru yang lagi panas.</div>
         <div class="ngt-filters" id="ngtFilters">
-          <button class="active" data-f="semua">Semua</button><button data-f="viral">Viral</button><button data-f="jateng">Jateng</button><button data-f="olahraga">Olahraga</button><button data-f="cuaca">Cuaca</button>
+          <button class="active" data-f="semua">Semua</button><button data-f="viral">Viral</button><button data-f="jateng">Jateng</button><button data-f="olahraga">Olahraga</button><button data-f="cuaca">Cuaca</button><button data-f="nasional">Nasional</button>
         </div>
         <div class="ngt-newsgrid" id="ngtNewsList">
-          <div class="ngt-newscard" data-kategori="viral"><div class="thumb t-viral">🔥</div><div class="body"><div class="meta"><span class="ngt-chip orange">VIRAL</span><span class="ngt-muted">Folk Jateng • 12 mnt lalu</span></div><h4>Harga Cabai Rawit di Pasar Induk Naik 40% dalam Sepekan, Pedagang Keluhkan Sepi Pembeli</h4><p>Para pedagang menyebut pasokan dari petani berkurang akibat cuaca ekstrem pekan lalu…</p><button class="ngt-btn small" onclick="ngtBuatKonten(this)">Buat Konten →</button></div></div>
-          <div class="ngt-newscard" data-kategori="jateng"><div class="thumb t-jateng">🏛️</div><div class="body"><div class="meta"><span class="ngt-chip blue">JATENG</span><span class="ngt-muted">Arsip Peristiwa • 35 mnt lalu</span></div><h4>Jembatan Baru Cilacap Resmi Dibuka untuk Umum Hari Ini, Urai Kemacetan Jalur Selatan</h4><p>Peresmian dilakukan langsung oleh bupati dan dihadiri ratusan warga sekitar…</p><button class="ngt-btn small" onclick="ngtBuatKonten(this)">Buat Konten →</button></div></div>
-          <div class="ngt-newscard" data-kategori="viral"><div class="thumb t-viral">🔥</div><div class="body"><div class="meta"><span class="ngt-chip orange">VIRAL</span><span class="ngt-muted">Faizal Izall • 1 jam lalu</span></div><h4>Timnas Indonesia Menang 2-0 atas Vietnam di Kualifikasi, Suporter Penuhi Stadion</h4><p>Dua gol kemenangan dicetak di babak kedua lewat skema serangan balik cepat…</p><button class="ngt-btn small" onclick="ngtBuatKonten(this)">Buat Konten →</button></div></div>
-          <div class="ngt-newscard" data-kategori="cuaca"><div class="thumb t-cuaca">🌧️</div><div class="body"><div class="meta"><span class="ngt-chip blue">CUACA</span><span class="ngt-muted">Folk Jateng • 2 jam lalu</span></div><h4>Waspada! BMKG Prediksi Hujan Lebat Guyur Jateng 3 Hari ke Depan</h4><p>Masyarakat diimbau waspada potensi banjir dan tanah longsor di daerah rawan…</p><button class="ngt-btn small" onclick="ngtBuatKonten(this)">Buat Konten →</button></div></div>
-          <div class="ngt-newscard" data-kategori="kuliner"><div class="thumb t-kuliner">🍜</div><div class="body"><div class="meta"><span class="ngt-chip gray">KULINER</span><span class="ngt-muted">Arsip Peristiwa • 3 jam lalu</span></div><h4>Festival Kuliner Malam Minggu Meriahkan Alun-alun, 80 UMKM Ikut Serta</h4><p>Pengunjung memadati puluhan stan makanan khas daerah sejak sore hari…</p><button class="ngt-btn small" onclick="ngtBuatKonten(this)">Buat Konten →</button></div></div>
-          <div class="ngt-newscard" data-kategori="warga"><div class="thumb t-warga">👥</div><div class="body"><div class="meta"><span class="ngt-chip gray">WARGA</span><span class="ngt-muted">Berita Cilacap • 5 jam lalu</span></div><h4>Ribuan Warga Antusias Ikuti Jalan Sehat Berhadiah Umroh di Cilacap</h4><p>Acara jalan sehat dimulai pukul 06.00 dengan rute mengelilingi pusat kota…</p><button class="ngt-btn small" onclick="ngtBuatKonten(this)">Buat Konten →</button></div></div>
+          <div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px" id="ngtNewsLoading">Mengambil berita terbaru&hellip;</div>
         </div>
         <p class="ngt-muted" id="ngtNewsEmpty" style="display:none;text-align:center;padding:24px">Belum ada berita di kategori ini.</p>
       </section>
@@ -256,7 +252,7 @@
       <!-- STUDIO -->
       <section class="ngt-page" id="page-studio">
         <div class="ngt-title">Studio Konten</div>
-        <div class="ngt-desc">Buat konten pakai AI atau posting manual. <span class="ngt-badge-contoh">DATA CONTOH</span></div>
+        <div class="ngt-desc">Buat konten pakai AI atau posting manual.</div>
         <div class="ngt-tabs">
           <button class="active" data-tab="ai" onclick="ngtTabStudio('ai')">✨ AI News</button>
           <button data-tab="manual" onclick="ngtTabStudio('manual')">📝 Post Manual</button>
@@ -282,7 +278,7 @@
             </div></div>
           <div class="ngt-field"><label class="ngt-label">Nada tulisan</label>
             <div class="ngt-jenis" id="aiTone">
-              <button class="active" data-t="viral" onclick="aiPilihTone('viral',this)">\U0001F525 Viral</button><button data-t="marah" onclick="aiPilihTone('marah',this)">\U0001F621 Geram</button><button data-t="sedih" onclick="aiPilihTone('sedih',this)">\U0001F494 Haru</button><button data-t="kagum" onclick="aiPilihTone('kagum',this)">\U0001F632 Kagum</button><button data-t="lucu" onclick="aiPilihTone('lucu',this)">\U0001F602 Satir</button><button data-t="bangga" onclick="aiPilihTone('bangga',this)">\U0001F1EE\U0001F1E9 Bangga</button>
+              <button class="active" data-t="viral" onclick="aiPilihTone('viral',this)">🔥 Viral</button><button data-t="marah" onclick="aiPilihTone('marah',this)">😡 Geram</button><button data-t="sedih" onclick="aiPilihTone('sedih',this)">💔 Haru</button><button data-t="kagum" onclick="aiPilihTone('kagum',this)">😲 Kagum</button><button data-t="lucu" onclick="aiPilihTone('lucu',this)">😂 Satir</button><button data-t="bangga" onclick="aiPilihTone('bangga',this)">🇮🇩 Bangga</button>
             </div>
             <p class="ngt-muted" style="margin:6px 0 0">Generate otomatis mengikuti <b>semua halamanmu</b> di Setting — tiap halaman dapat 3 opsi.</p></div>
           <div class="ngt-wiznav"><button class="ngt-btn" onclick="aiKeStep(2)" style="flex:1;">Lanjut ke Kurasi &rarr;</button></div>
@@ -414,7 +410,7 @@
       <!-- ANTREAN -->
       <section class="ngt-page" id="page-antrean">
         <div class="ngt-title">Antrean Publish</div>
-        <div class="ngt-desc">Postingan terjadwal. Sekali setting, jalan sendiri. <span class="ngt-badge-contoh">DATA CONTOH</span></div>
+        <div class="ngt-desc">Postingan terjadwal. Sekali setting, jalan sendiri.</div>
         <div class="ngt-card" style="margin-bottom:14px;">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
             <div style="flex:2;min-width:180px;"><label class="ngt-label">Judul</label><input class="ngt-input" id="anJudul" placeholder="Judul postingan..."></div>
@@ -429,7 +425,7 @@
       <!-- KOMENTAR -->
       <section class="ngt-page" id="page-komentar">
         <div class="ngt-title">Komentar</div>
-        <div class="ngt-desc">Komentar masuk dari semua halaman. AI menyiapkan balasan, kamu yang kirim. <span class="ngt-badge-contoh">DATA CONTOH</span></div>
+        <div class="ngt-desc">Komentar masuk dari semua halaman. AI menyiapkan balasan, kamu yang kirim.</div>
         <div class="ngt-card" style="margin-bottom:14px;">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
             <input class="ngt-input" id="kmSearch" placeholder="Cari komentar..." style="flex:1;min-width:160px;" oninput="kmCari(this.value)">
@@ -450,7 +446,7 @@
       <!-- INSIGHT -->
       <section class="ngt-page" id="page-insight">
         <div class="ngt-title">Insight</div>
-        <div class="ngt-desc">Performa 7 hari terakhir. <span class="ngt-badge-contoh">DATA CONTOH</span></div>
+        <div class="ngt-desc">Performa 7 hari terakhir.</div>
         <div class="ngt-stats">
           <div class="ngt-card ngt-stat"><div class="ico">👁️</div><div class="num">128rb</div><div class="lbl">Jangkauan</div></div>
           <div class="ngt-card ngt-stat"><div class="ico">❤️</div><div class="num">12,4rb</div><div class="lbl">Interaksi</div></div>
@@ -551,7 +547,7 @@
         <div class="ngt-card">
           <h3>⚙️ Umum</h3>
           <div class="ngt-field"><label class="ngt-label">Zona waktu posting</label><select class="ngt-select"><option>Asia/Jakarta (WIB)</option><option>Asia/Makassar (WITA)</option><option>Asia/Jayapura (WIT)</option></select></div>
-          <div class="ngt-row" style="border:none;background:none;padding:4px 0"><div style="flex:1"><b style="color:#fff;font-size:14px">Mode contoh</b><div class="ngt-muted">Semua data di prototype ini adalah dummy</div></div><label class="ngt-switch"><input type="checkbox" checked disabled><span class="sl"></span></label></div>
+          <div class="ngt-row" style="border:none;background:none;padding:4px 0"><div style="flex:1"><b style="color:#fff;font-size:14px">NewsGen Studio</b><div class="ngt-muted">Versi 1.0 &bull; datamu tersimpan aman di akunmu</div></div></div>
         </div>
       </section>
 
@@ -1400,6 +1396,7 @@
   function goPage(name){
     if(name==='panduan') ngtRenderPanduan();
     if(name==='komentar') kmLoad();
+    if(name==='radar') ngtMuatBerita();
     if(name==='antrean') anMuat();
     document.querySelectorAll('#ngtNav button').forEach(function(b){ b.classList.toggle('active', b.dataset.target===name); });
     document.querySelectorAll('.ngt-page').forEach(function(p){ p.classList.toggle('active', p.id==='page-'+name); });
@@ -1551,18 +1548,73 @@
     ngtToast('Berita dimuat ke <b>AI News</b> — lanjut ke Kurasi');
   };
 
+  // ============ NEWS AGGREGATOR: RSS ASLI via Web App ============
+  var KAT_META = {
+    viral:    { label:'VIRAL',    chip:'orange', thumb:'t-viral',    emoji:'🔥' },
+    jateng:   { label:'JATENG',   chip:'blue',   thumb:'t-jateng',   emoji:'🏛\uFE0F' },
+    olahraga: { label:'OLAHRAGA', chip:'green',  thumb:'t-viral',    emoji:'\u26BD' },
+    cuaca:    { label:'CUACA',    chip:'blue',   thumb:'t-cuaca',    emoji:'🌧\uFE0F' },
+    nasional: { label:'NASIONAL', chip:'gray',   thumb:'t-nasional', emoji:'📰' }
+  };
+  var ngtNewsCache = { ts:0, items:[] };
+  function ngtWaktuRelatif(w){
+    var t = Date.parse(w);
+    if(!t) return '';
+    var d = Math.max(0, Date.now() - t), m = Math.floor(d/60000);
+    if(m < 1) return 'baru saja';
+    if(m < 60) return m + ' mnt lalu';
+    var j = Math.floor(m/60);
+    if(j < 24) return j + ' jam lalu';
+    return Math.floor(j/24) + ' hari lalu';
+  }
+  function ngtRenderBerita(items){
+    var box = document.getElementById('ngtNewsList');
+    if(!box) return;
+    if(!items.length){
+      box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Belum ada berita saat ini.<br><button class="ngt-btn small" style="margin-top:12px" onclick="ngtMuatBerita(true)">Muat ulang</button></div>';
+      return;
+    }
+    box.innerHTML = items.map(function(b){
+      var k = b.kategori || 'nasional';
+      var m = KAT_META[k] || KAT_META.nasional;
+      var w = ngtWaktuRelatif(b.waktu);
+      return '<div class="ngt-newscard" data-kategori="' + esc(k) + '"><div class="thumb ' + m.thumb + '">' + m.emoji + '</div>' +
+        '<div class="body"><div class="meta"><span class="ngt-chip ' + m.chip + '">' + m.label + '</span>' +
+        '<span class="ngt-muted">' + esc(b.sumber || '') + (w ? ' &bull; ' + w : '') + '</span></div>' +
+        '<h4>' + esc(b.judul || '') + '</h4><p>' + esc(b.ringkasan || '') + '</p>' +
+        '<div style="display:flex;gap:8px"><button class="ngt-btn small" onclick="ngtBuatKonten(this)">Buat Konten &rarr;</button>' +
+        (b.url ? '<a class="ngt-btn small ghost" href="' + esc(b.url) + '" target="_blank" rel="noopener">Sumber</a>' : '') +
+        '</div></div></div>';
+    }).join('');
+  }
+  window.ngtMuatBerita = async function(paksa){
+    var box = document.getElementById('ngtNewsList');
+    if(!box) return;
+    if(!paksa && Date.now() - ngtNewsCache.ts < 5*60*1000 && ngtNewsCache.items.length){ ngtRenderBerita(ngtNewsCache.items); return; }
+    if(!Sheet.ok()){ box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Isi <b>URL Web App</b> di Setting dulu untuk memuat berita.</div>'; return; }
+    box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Mengambil berita terbaru&hellip;</div>';
+    try {
+      var r = await Sheet.callg({ action:'rss', pid:ngtPid() });
+      var items = (r && r.items) || [];
+      ngtNewsCache = { ts:Date.now(), items:items };
+      ngtRenderBerita(items);
+    } catch(e){
+      box.innerHTML = '<div class="ngt-muted" style="grid-column:1/-1;text-align:center;padding:40px">Gagal memuat berita: ' + esc(e.message) + '<br><button class="ngt-btn small" style="margin-top:12px" onclick="ngtMuatBerita(true)">Coba lagi</button></div>';
+    }
+  };
+
   // ============ WIZARD AI NEWS (3 langkah ala contoh) ============
   var aiW = { step:1, sets:[], activeSet:0, tone:'viral' };
   // Kompatibilitas: properti lama dibaca dari set aktif
   function aiSetAktif(){ return aiW.sets[aiW.activeSet] || null; }
 
   var AI_TONES = [
-    { key:'viral', label:'\U0001F525 Viral', desc:'Wajib share' },
-    { key:'marah', label:'\U0001F621 Geram', desc:'Pancing emosi' },
-    { key:'sedih', label:'\U0001F494 Haru', desc:'Sentuh hati' },
-    { key:'kagum', label:'\U0001F632 Kagum', desc:'Bikin terpana' },
-    { key:'lucu', label:'\U0001F602 Satir', desc:'Humor nyindir' },
-    { key:'bangga', label:'\U0001F1EE\U0001F1E9 Bangga', desc:'Nasionalisme' }
+    { key:'viral', label:'🔥 Viral', desc:'Wajib share' },
+    { key:'marah', label:'😡 Geram', desc:'Pancing emosi' },
+    { key:'sedih', label:'💔 Haru', desc:'Sentuh hati' },
+    { key:'kagum', label:'😲 Kagum', desc:'Bikin terpana' },
+    { key:'lucu', label:'😂 Satir', desc:'Humor nyindir' },
+    { key:'bangga', label:'🇮🇩 Bangga', desc:'Nasionalisme' }
   ];
 
   // Panggil Gemini langsung dari browser (pakai API key pelanggan di Setting)
@@ -1645,16 +1697,18 @@
     });
     window.scrollTo({top:0, behavior:'smooth'});
   };
-  window.aiAmbilUrl = function(){
+  window.aiAmbilUrl = async function(){
     var u = document.getElementById('aiUrl').value.trim();
     if(!u){ ngtToast('Isi dulu <b>URL beritanya</b>'); return; }
-    ngtToast('Mengambil berita dari URL&hellip; (simulasi)');
-    setTimeout(function(){
-      document.getElementById('aiSumber').value =
-        'Judul berita dari ' + (u.split('//')[1] || u).split('/')[0] + '\n' +
-        'Isi berita hasil ambil otomatis (simulasi). Pada versi produksi, teks asli berita akan ditarik langsung dari URL ini.';
-      ngtToast('Berita <b>berhasil</b> diambil (simulasi)');
-    }, 1200);
+    if(!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    if(!Sheet.ok()){ ngtToast('Isi <b>URL Web App</b> di Setting dulu'); return; }
+    ngtToast('Mengambil berita dari URL&hellip;');
+    try {
+      var r = await Sheet.callg({ action:'ambil_url', url:u, pid:ngtPid() });
+      if(!r || !r.ok) throw new Error((r && r.error) || 'Gagal mengambil isi URL');
+      document.getElementById('aiSumber').value = (r.judul ? r.judul + '\n' : '') + r.teks;
+      ngtToast('Berita <b>berhasil</b> diambil dari URL');
+    } catch(e){ ngtToast('Gagal: ' + esc(e.message)); }
   };
   window.aiPilihTone = function(t, btn){
     aiW.tone = t;

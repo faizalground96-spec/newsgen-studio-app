@@ -97,7 +97,7 @@ function custSS(spreadsheetId) {
 }
 
 /* VERSI API — naikkan setiap ada perubahan action. Klien menyesuaikan. */
-var NGS_VERSI = '2.1';
+var NGS_VERSI = '2.2';
 
 /* MODE MANDIRI: kalau sheet MASTER "Pelanggan" KOSONG (deploy milik pelanggan
    sendiri), script melayani pid apapun memakai spreadsheet ini langsung.
@@ -148,6 +148,8 @@ function doGet(e) {
   if (action === 'komentar') return json({ ok: true, rows: komentarList(pid) });
   if (action === 'arsip')    return json({ ok: true, rows: arsipList(pid) });
   if (action === 'config')   return json({ ok: true, config: configGet(pid) });
+  if (action === 'rss')      return json({ ok: true, items: rssBerita() });
+  if (action === 'ambil_url') return json(ambilUrlBerita(p.url || ''));
   return json({ ok: true, pesan: 'NewsGen Studio Webhook aktif', versi: NGS_VERSI });
 }
 
@@ -335,4 +337,88 @@ function custAppend(pid, sheetName, row) {
   var head = d.head.length ? d.head : Object.keys(row || {});
   if (!d.head.length && head.length) sh.getRange(1, 1, 1, head.length).setValues([head]);
   return sheetAppendRow(sh, head, row);
+}
+
+/* ================= BERITA: RSS + AMBIL URL ================= */
+var RSS_FEEDS = [
+  { nama: 'Antara',        url: 'https://www.antaranews.com/rss/terkini.xml', kategori: '' },
+  { nama: 'CNN Indonesia', url: 'https://www.cnnindonesia.com/rss',           kategori: '' },
+  { nama: 'Liputan6',      url: 'https://www.liputan6.com/rss',               kategori: '' },
+  { nama: 'Detik',         url: 'https://rss.detik.com/index.php/detikcom',   kategori: '' },
+  { nama: 'Okezone',       url: 'https://rss.okezone.com/',                   kategori: '' }
+];
+
+function rssTeks(el, nama) {
+  try {
+    var c = el.getChild(nama);
+    if (c) return (c.getText() || '').trim();
+    var ns = el.getChildren();
+    for (var i = 0; i < ns.length; i++) {
+      if (ns[i].getName && ns[i].getName() === nama) return (ns[i].getText() || '').trim();
+    }
+  } catch (e) {}
+  return '';
+}
+
+function rssKategori(judul) {
+  var t = (' ' + (judul || '')).toLowerCase();
+  if (/bola|timnas|liga|\bgol\b|pertandingan|atlet|olahraga|bulu tangkis|motogp|balap|persib|persija|pssi/.test(t)) return 'olahraga';
+  if (/cuaca|hujan|bmkg|banjir|longsor|kemarau|gelombang|angin kencang/.test(t)) return 'cuaca';
+  if (/cilacap|jawa tengah|jateng|semarang|\bsolo\b|surakarta|purwokerto|tegal|pekalongan|banyumas|kebumen/.test(t)) return 'jateng';
+  if (/viral|heboh|geger|kontroversi|skandal/.test(t)) return 'viral';
+  return 'nasional';
+}
+
+function rssBerita() {
+  var items = [];
+  RSS_FEEDS.forEach(function (f) {
+    try {
+      var res = UrlFetchApp.fetch(f.url, { muteHttpExceptions: true, followRedirects: true });
+      if (res.getResponseCode() !== 200) return;
+      var root = XmlService.parse(res.getContentText()).getRootElement();
+      var els = [];
+      var ch = root.getChild('channel');
+      if (ch) els = ch.getChildren('item');
+      if (!els.length) els = root.getChildren('entry'); // format Atom
+      var ambil = Math.min(els.length, 6);
+      for (var i = 0; i < ambil; i++) {
+        var judul = rssTeks(els[i], 'title');
+        if (!judul) continue;
+        var desc = rssTeks(els[i], 'description') || rssTeks(els[i], 'summary') || '';
+        desc = desc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        var link = rssTeks(els[i], 'link');
+        if (!link) { try { var l = els[i].getChild('link'); if (l && l.getAttribute('href')) link = l.getAttribute('href').getValue(); } catch (e2) {} }
+        items.push({
+          judul: judul,
+          ringkasan: desc.substring(0, 160),
+          sumber: f.nama,
+          url: link,
+          waktu: rssTeks(els[i], 'pubDate') || rssTeks(els[i], 'published') || rssTeks(els[i], 'updated') || '',
+          kategori: rssKategori(judul)
+        });
+      }
+    } catch (e) { /* feed gagal -> lewati, lanjut ke feed lain */ }
+  });
+  return items;
+}
+
+/* Ambil teks berita dari URL (dipanggil dashboard agar lolos CORS). */
+function ambilUrlBerita(url) {
+  if (!url || !/^https?:\/\//i.test(url)) return { ok: false, error: 'URL tidak valid' };
+  try {
+    var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    if (res.getResponseCode() !== 200) return { ok: false, error: 'Gagal membuka halaman (HTTP ' + res.getResponseCode() + ')' };
+    var html = res.getContentText() || '';
+    var mj = /<title[^>]*>([^<]+)<\/title>/i.exec(html);
+    var judul = mj ? mj[1].replace(/\s+/g, ' ').trim() : '';
+    var teks = html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
+                   .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+                   .replace(/<[^>]+>/g, ' ')
+                   .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"')
+                   .replace(/\s+/g, ' ').trim();
+    if (!teks || teks.length < 200) return { ok: false, error: 'Isi halaman terlalu sedikit / tidak terbaca' };
+    return { ok: true, judul: judul, teks: teks.substring(0, 12000) };
+  } catch (e) {
+    return { ok: false, error: String(e).substring(0, 140) };
+  }
 }
