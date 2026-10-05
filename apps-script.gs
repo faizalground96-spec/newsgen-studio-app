@@ -167,6 +167,14 @@ function doPost(e) {
   if (action === 'config_set')     return json({ ok: true, config: configSet(pid, data.kunci, data.nilai) });
   if (action === 'arsip')          return json({ ok: true, row: arsipTulis(pid, data.row || {}) });
   if (action === 'pelanggan_register') return json({ ok: true, hasil: pelangganRegister(data) });
+  if (action === 'auth_buat') {
+    if (!authVerifikasiAdmin(data.admin_jwt)) return json({ ok: false, error: 'bukan admin' });
+    return json(authBuatUser(data.email, data.password));
+  }
+  if (action === 'auth_ubah') {
+    if (!authVerifikasiAdmin(data.admin_jwt)) return json({ ok: false, error: 'bukan admin' });
+    return json(authUbahPassword(data.email, data.password));
+  }
   // Fallback generik (kalau Supabase down): baca/tulis sheet milik pelanggan
   if (action === 'list')   return json({ ok: true, rows: custList(pid, data.sheet) });
   if (action === 'append') return json({ ok: true, row: custAppend(pid, data.sheet, data.row || {}) });
@@ -421,4 +429,76 @@ function ambilUrlBerita(url) {
   } catch (e) {
     return { ok: false, error: String(e).substring(0, 140) };
   }
+}
+
+/* ================= AUTH SUPABASE (buat/ubah user login) =================
+   Dipakai dashboard admin untuk membuatkan user login pelanggan.
+   service_role key disimpan di Script Properties (SUPABASE_SERVICE_KEY). */
+var SUPABASE_URL = 'https://ppenobzyzbkmdaiojygn.supabase.co';
+
+function sbServiceKey_() {
+  return PropertiesService.getScriptProperties().getProperty('SUPABASE_SERVICE_KEY') || '';
+}
+
+/* Verifikasi JWT admin: panggil /auth/v1/user, pastikan role=admin. */
+function authVerifikasiAdmin(jwt) {
+  if (!jwt) return false;
+  var key = sbServiceKey_();
+  if (!key) return false;
+  try {
+    var res = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/user', {
+      method: 'get', muteHttpExceptions: true,
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + jwt }
+    });
+    if (res.getResponseCode() !== 200) return false;
+    var j = JSON.parse(res.getContentText() || '{}');
+    return !!(j && j.app_metadata && j.app_metadata.role === 'admin');
+  } catch (e) { return false; }
+}
+
+function authBuatUser(email, password) {
+  var key = sbServiceKey_();
+  if (!key) return { ok: false, error: 'service key belum diset' };
+  if (!email || !password || String(password).length < 6)
+    return { ok: false, error: 'email & password (min 6) wajib' };
+  try {
+    var res = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/admin/users', {
+      method: 'post', muteHttpExceptions: true,
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+      payload: JSON.stringify({ email: email, password: password, email_confirm: true })
+    });
+    var j = JSON.parse(res.getContentText() || '{}');
+    if (res.getResponseCode() >= 300)
+      return { ok: false, error: j.msg || j.message || ('HTTP ' + res.getResponseCode()) };
+    return { ok: true, id: j.id };
+  } catch (e) { return { ok: false, error: String(e).substring(0, 140) }; }
+}
+
+function authUbahPassword(email, password) {
+  var key = sbServiceKey_();
+  if (!key) return { ok: false, error: 'service key belum diset' };
+  if (!email || !password || String(password).length < 6)
+    return { ok: false, error: 'email & password (min 6) wajib' };
+  try {
+    // cari user id by email
+    var res = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/admin/users?per_page=1000', {
+      method: 'get', muteHttpExceptions: true,
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    var arr = JSON.parse(res.getContentText() || '{}');
+    var users = arr.users || arr || [];
+    var uid = null;
+    for (var i = 0; i < users.length; i++) {
+      if (String(users[i].email || '').toLowerCase() === String(email).toLowerCase()) { uid = users[i].id; break; }
+    }
+    if (!uid) return { ok: false, error: 'user tidak ditemukan' };
+    var res2 = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/admin/users/' + uid, {
+      method: 'put', muteHttpExceptions: true,
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+      payload: JSON.stringify({ password: password })
+    });
+    if (res2.getResponseCode() >= 300)
+      return { ok: false, error: 'HTTP ' + res2.getResponseCode() };
+    return { ok: true };
+  } catch (e) { return { ok: false, error: String(e).substring(0, 140) }; }
 }
