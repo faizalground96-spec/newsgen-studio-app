@@ -2265,7 +2265,7 @@
       var genPrompt = '';
       try { genPrompt = (await aiGemini(promptText, false)).trim().replace(/^"|"$/g, ''); } catch(e){}
       if(!genPrompt) genPrompt = 'A dramatic cinematic news illustration, high quality';
-      var models = ['gemini-2.5-flash-image', 'gemini-3-pro-image-preview'];
+      var models = ['gemini-3.1-flash-image']; // 2.5-flash-image mati 2 Okt 2026, 3-pro-image-preview mati 25 Jun 2026
       var lastErr = null, dataUrl = null;
       for(var i = 0; i < models.length; i++){
         try {
